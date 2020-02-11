@@ -23,11 +23,14 @@ impl Parse {
             _ => return Err(ParseError::Invalid),
         };
 
-        Ok(Parse { parts: array.into_iter() })
+        Ok(Parse {
+            parts: array.into_iter(),
+        })
     }
 
     fn next(&mut self) -> Result<Frame, ParseError> {
-        self.parts.next()
+        self.parts
+            .next()
             .map(|frame| *frame)
             .ok_or(ParseError::EndOfStream)
     }
@@ -35,11 +38,9 @@ impl Parse {
     pub(crate) fn next_string(&mut self) -> Result<String, ParseError> {
         match self.next()? {
             Frame::Simple(s) => Ok(s),
-            Frame::Bulk(data) => {
-                str::from_utf8(&data[..])
-                    .map(|s| s.to_string())
-                    .map_err(|_| ParseError::Invalid)
-            }
+            Frame::Bulk(data) => str::from_utf8(&data[..])
+                .map(|s| s.to_string())
+                .map_err(|_| ParseError::Invalid),
             _ => Err(ParseError::Invalid),
         }
     }
@@ -79,6 +80,7 @@ impl From<ParseError> for io::Error {
                 EndOfStream => "end of stream".to_string(),
                 Invalid => "invalid".to_string(),
                 UnknownCommand(cmd) => format!("unknown command `{}`", cmd),
-            })
+            },
+        )
     }
 }

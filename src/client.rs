@@ -2,8 +2,8 @@
 use crate::Connection;
 
 use bytes::Bytes;
-use tokio::net::{TcpStream, ToSocketAddrs};
 use std::io;
+use tokio::net::{TcpStream, ToSocketAddrs};
 
 /// Mini asynchronous Redis client
 pub struct Client {

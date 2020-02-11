@@ -1,10 +1,10 @@
-use crate::{Command, Connection, Frame, Kv, Shutdown};
 use crate::cmd::{Parse, ParseError};
+use crate::{Command, Connection, Frame, Kv, Shutdown};
 
 use bytes::Bytes;
-use tokio::select;
-use tokio::stream::{StreamMap, StreamExt};
 use std::io;
+use tokio::select;
+use tokio::stream::{StreamExt, StreamMap};
 
 #[derive(Debug)]
 pub struct Subscribe {
@@ -49,7 +49,6 @@ impl Subscribe {
         dst: &mut Connection,
         shutdown: &mut Shutdown,
     ) -> io::Result<()> {
-
         // Each individual channel subscription is handled using a
         // `sync::broadcast` channel. Messages are then fanned out to all
         // clients currently subscribed to the channels.

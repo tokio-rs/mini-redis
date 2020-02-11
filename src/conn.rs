@@ -1,9 +1,9 @@
 use crate::frame::{self, Frame};
 
 use bytes::{Buf, BytesMut};
-use tokio::io::{BufStream, AsyncReadExt, AsyncWriteExt};
-use tokio::net::TcpStream;
 use std::io::{self, Cursor};
+use tokio::io::{AsyncReadExt, AsyncWriteExt, BufStream};
+use tokio::net::TcpStream;
 
 #[derive(Debug)]
 pub(crate) struct Connection {
