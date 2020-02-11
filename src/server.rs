@@ -29,11 +29,11 @@ struct Handler {
 }
 
 /// Run the mini-redis server.
-pub async fn run() -> io::Result<()> {
+pub async fn run(port: &str) -> io::Result<()> {
     let (notify_shutdown, _) = broadcast::channel(1);
 
     let mut server = Server {
-        listener: TcpListener::bind("127.0.0.1:6379").await?,
+        listener: TcpListener::bind(&format!("127.0.0.1:{}", port)).await?,
         kv: Kv::new(),
         notify_shutdown,
     };
@@ -41,6 +41,7 @@ pub async fn run() -> io::Result<()> {
     tokio::select! {
         res = server.run() => {
             if let Err(err) = res {
+                // TODO: gracefully handle this error
                 eprintln!("failed to accept; err = {}", err);
             }
         }

@@ -1,4 +1,3 @@
-#![cfg(nope)]
 use crate::Connection;
 
 use bytes::Bytes;
