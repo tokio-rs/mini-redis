@@ -74,7 +74,7 @@ impl Frame {
             b'*' => {
                 let len = get_decimal(src)?;
 
-                for _ in 0.. len {
+                for _ in 0..len {
                     Frame::check(src)?;
                 }
 
@@ -139,7 +139,7 @@ impl Frame {
                 let len = get_decimal(src)?.try_into()?;
                 let mut out = Vec::with_capacity(len);
 
-                for _ in 0.. len {
+                for _ in 0..len {
                     out.push(Box::new(Frame::parse(src)?));
                 }
 
@@ -181,8 +181,7 @@ fn get_decimal(src: &mut Cursor<&[u8]>) -> Result<u64, Error> {
 
     let line = get_line(src)?;
 
-    atoi::<u64>(line)
-        .ok_or(Error::Invalid)
+    atoi::<u64>(line).ok_or(Error::Invalid)
 }
 
 /// Find a line
@@ -193,7 +192,7 @@ fn get_line<'a>(src: &mut Cursor<&'a [u8]>) -> Result<&'a [u8], Error> {
     let end = src.get_ref().len() - 1;
 
     for i in start..end {
-        if src.get_ref()[i] == b'\r' && src.get_ref()[i+1] == b'\n' {
+        if src.get_ref()[i] == b'\r' && src.get_ref()[i + 1] == b'\n' {
             // We found a line, update the position to be *after* the \n
             src.set_position((i + 2) as u64);
 

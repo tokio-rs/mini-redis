@@ -1,8 +1,8 @@
 use bytes::Bytes;
-use tokio::sync::broadcast;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+use tokio::sync::broadcast;
 
 #[derive(Debug, Clone)]
 pub(crate) struct Kv {
@@ -44,9 +44,7 @@ impl Kv {
         let mut shared = self.shared.lock().unwrap();
 
         match shared.pub_sub.entry(key) {
-            Entry::Occupied(e) => {
-                e.get().subscribe()
-            }
+            Entry::Occupied(e) => e.get().subscribe(),
             Entry::Vacant(e) => {
                 let (tx, rx) = broadcast::channel(1028);
                 e.insert(tx);
@@ -58,7 +56,9 @@ impl Kv {
     pub(crate) fn publish(&self, key: &str, value: Bytes) -> usize {
         let shared = self.shared.lock().unwrap();
 
-        shared.pub_sub.get(key)
+        shared
+            .pub_sub
+            .get(key)
             .map(|tx| tx.send(value).unwrap_or(0))
             .unwrap_or(0)
     }

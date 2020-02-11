@@ -1,5 +1,5 @@
-use crate::{Connection, Frame, Kv};
 use crate::cmd::{Parse, ParseError};
+use crate::{Connection, Frame, Kv};
 
 use bytes::Bytes;
 use std::io;

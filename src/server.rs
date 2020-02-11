@@ -1,4 +1,4 @@
-use crate::{Connection, Command, Kv, Shutdown};
+use crate::{Command, Connection, Kv, Shutdown};
 
 use tokio::io;
 use tokio::net::TcpListener;
@@ -90,10 +90,8 @@ impl Handler {
 
             let cmd = Command::from_frame(frame)?;
 
-            cmd.apply(
-                &self.kv,
-                &mut self.connection,
-                &mut self.shutdown).await?;
+            cmd.apply(&self.kv, &mut self.connection, &mut self.shutdown)
+                .await?;
         }
 
         Ok(())
