@@ -14,7 +14,7 @@ impl Get {
     }
 
     pub(crate) async fn apply(self, kv: &Kv, dst: &mut Connection) -> io::Result<()> {
-        let response = if let Some(value) = kv.get(&self.key[..]) {
+        let response = if let Some(value) = kv.get(&self.key) {
             Frame::Bulk(value)
         } else {
             Frame::Null
