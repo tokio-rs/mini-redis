@@ -27,14 +27,14 @@ impl Command {
     pub(crate) fn from_frame(frame: Frame) -> Result<Command, ParseError> {
         let mut parse = Parse::new(frame)?;
 
-        let command_name = parse.next_string()?;
+        let command_name = parse.next_string()?.to_lowercase();
 
         let command = match &command_name[..] {
-            "GET" => Command::Get(Get::parse(&mut parse)?),
-            "PUBLISH" => Command::Publish(Publish::parse(&mut parse)?),
-            "SET" => Command::Set(Set::parse(&mut parse)?),
-            "SUBSCRIBE" => Command::Subscribe(Subscribe::parse(&mut parse)?),
-            "UNSUBSCRIBE" => Command::Unsubscribe(Unsubscribe::parse(&mut parse)?),
+            "get" => Command::Get(Get::parse(&mut parse)?),
+            "publish" => Command::Publish(Publish::parse(&mut parse)?),
+            "set" => Command::Set(Set::parse(&mut parse)?),
+            "subscribe" => Command::Subscribe(Subscribe::parse(&mut parse)?),
+            "unsubscribe" => Command::Unsubscribe(Unsubscribe::parse(&mut parse)?),
             _ => return Err(ParseError::UnknownCommand(command_name)),
         };
 
