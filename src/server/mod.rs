@@ -1,4 +1,7 @@
-use crate::{Command, Connection, Kv, Shutdown};
+mod cmd;
+use cmd::Command;
+
+use crate::{Connection, Kv, Shutdown};
 
 use tokio::io;
 use tokio::net::TcpListener;

@@ -1,4 +1,4 @@
-use crate::cmd::{Parse, ParseError};
+use crate::server::cmd::{Parse, ParseError};
 use crate::{Connection, Frame, Kv};
 
 use bytes::Bytes;

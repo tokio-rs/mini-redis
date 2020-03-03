@@ -2,8 +2,7 @@ pub const DEFAULT_PORT: &str = "6379";
 
 pub mod client;
 
-mod cmd;
-use cmd::Command;
+pub mod server;
 
 mod conn;
 use conn::Connection;
@@ -16,8 +15,6 @@ use kv::Kv;
 
 mod parse;
 use parse::{Parse, ParseError};
-
-pub mod server;
 
 mod shutdown;
 use shutdown::Shutdown;
