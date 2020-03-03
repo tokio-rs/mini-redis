@@ -18,7 +18,7 @@ async fn main() -> io::Result<()> {
             }
             Ok(())
         }
-        Client::Set { key, value } => client.set(&key, Bytes::from(value)).await,
+        Client::Set { key, value } => client.set(key, Bytes::from(value), None).await
     }
 }
 

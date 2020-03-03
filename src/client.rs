@@ -1,7 +1,8 @@
-use crate::Connection;
+use crate::{cmd::Set, Command, Connection};
 
 use bytes::Bytes;
 use std::io;
+use std::time::Duration;
 use tokio::net::{TcpStream, ToSocketAddrs};
 
 /// Mini asynchronous Redis client
@@ -21,7 +22,13 @@ impl Client {
         unimplemented!();
     }
 
-    pub async fn set(&mut self, key: &str, val: Bytes) -> io::Result<()> {
-        unimplemented!();
+    pub async fn set(
+        &mut self,
+        key: String,
+        value: Bytes,
+        expire: Option<Duration>,
+    ) -> io::Result<()> {
+        let frame = Command::Set(Set { key, value, expire }).to_frame()?;
+        self.conn.write_frame(&frame).await
     }
 }

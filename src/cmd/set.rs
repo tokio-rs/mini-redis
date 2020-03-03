@@ -8,9 +8,9 @@ use tracing::{debug, instrument};
 
 #[derive(Debug)]
 pub struct Set {
-    key: String,
-    value: Bytes,
-    expire: Option<Duration>,
+    pub(crate) key: String,
+    pub(crate) value: Bytes,
+    pub(crate) expire: Option<Duration>,
 }
 
 impl Set {
@@ -49,5 +49,13 @@ impl Set {
         let response = Frame::Simple("OK".to_string());
         debug!(?response);
         dst.write_frame(&response).await
+    }
+
+    pub(crate) fn get_frame(self) -> Frame {
+        let mut frame = Frame::array();
+        frame.push_bulk(Bytes::from("set".as_bytes()));
+        frame.push_bulk(Bytes::from(self.key.into_bytes()));
+        frame.push_bulk(self.value);
+        frame
     }
 }
