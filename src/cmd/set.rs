@@ -4,6 +4,7 @@ use crate::{Connection, Frame, Kv};
 use bytes::Bytes;
 use std::io;
 use std::time::Duration;
+use tracing::{debug, instrument};
 
 #[derive(Debug)]
 pub struct Set {
@@ -13,6 +14,7 @@ pub struct Set {
 }
 
 impl Set {
+    #[instrument]
     pub(crate) fn parse(parse: &mut Parse) -> Result<Set, ParseError> {
         use ParseError::EndOfStream;
 
@@ -34,14 +36,18 @@ impl Set {
             Err(err) => return Err(err),
         }
 
+        debug!(?key, ?value, ?expire);
+
         Ok(Set { key, value, expire })
     }
 
+    #[instrument]
     pub(crate) async fn apply(self, kv: &Kv, dst: &mut Connection) -> io::Result<()> {
         // Set the value
         kv.set(self.key, self.value, self.expire);
 
         let response = Frame::Simple("OK".to_string());
+        debug!(?response);
         dst.write_frame(&response).await
     }
 }
