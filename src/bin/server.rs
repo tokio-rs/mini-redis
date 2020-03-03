@@ -4,6 +4,10 @@ use std::io;
 
 #[tokio::main]
 pub async fn main() -> io::Result<()> {
+    // enable logging
+    // see https://docs.rs/tracing for more info
+    tracing_subscriber::fmt::init();
+    
     let cli = Cli::parse();
     let port = cli.port.unwrap_or(DEFAULT_PORT.to_string());
     server::run(&port).await

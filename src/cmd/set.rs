@@ -4,6 +4,7 @@ use crate::{Connection, Frame, Kv};
 use bytes::Bytes;
 use std::io;
 use std::time::Duration;
+use tracing::{event, Level};
 
 #[derive(Debug)]
 pub struct Set {
@@ -34,6 +35,8 @@ impl Set {
             Err(err) => return Err(err),
         }
 
+        event!(Level::DEBUG, ?key, ?value, ?expire);
+
         Ok(Set { key, value, expire })
     }
 
@@ -42,6 +45,7 @@ impl Set {
         kv.set(self.key, self.value, self.expire);
 
         let response = Frame::Simple("OK".to_string());
+        event!(Level::DEBUG, ?response);
         dst.write_frame(&response).await
     }
 }
