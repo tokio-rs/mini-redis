@@ -1,12 +1,12 @@
 use clap::Clap;
 use mini_redis::{server, DEFAULT_PORT};
-use std::io;
+use anyhow::{anyhow, Result};
 
 #[tokio::main]
-pub async fn main() -> io::Result<()> {
+pub async fn main() -> Result<()> {
     // enable logging
     // see https://docs.rs/tracing for more info
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt::try_init().map_err(|e| anyhow!("{:?}", e))?;
     
     let cli = Cli::parse();
     let port = cli.port.unwrap_or(DEFAULT_PORT.to_string());
