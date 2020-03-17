@@ -1,5 +1,6 @@
 use crate::{Command, Connection, Kv, Shutdown};
 
+use anyhow::Result;
 use tokio::io;
 use tokio::net::TcpListener;
 use tokio::signal;
@@ -29,7 +30,7 @@ struct Handler {
 }
 
 /// Run the mini-redis server.
-pub async fn run(port: &str) -> io::Result<()> {
+pub async fn run(port: &str) -> Result<()> {
     let (notify_shutdown, _) = broadcast::channel(1);
 
     let mut server = Server {
