@@ -58,7 +58,7 @@ impl Parse {
 
         match self.next()? {
             Frame::Integer(v) => Ok(v),
-            Frame::Simple(s) => atoi::<u64>(s.as_bytes()).ok_or(ParseError::Invalid),
+            Frame::Simple(data) => atoi::<u64>(data.as_bytes()).ok_or(ParseError::Invalid),
             Frame::Bulk(data) => atoi::<u64>(&data).ok_or(ParseError::Invalid),
             _ => Err(ParseError::Invalid),
         }

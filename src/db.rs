@@ -43,7 +43,7 @@ struct Entry {
     data: Bytes,
 
     /// Instant at which the entry expires and should be removed from the
-    /// databaase.
+    /// database.
     expires_at: Option<Instant>,
 }
 
@@ -130,13 +130,20 @@ impl Db {
         }
     }
 
+    /// Publish a message to the channel. Returns the number of subscribers
+    /// listening on the channel.
     pub(crate) fn publish(&self, key: &str, value: Bytes) -> usize {
         let state = self.shared.state.lock().unwrap();
 
         state
             .pub_sub
             .get(key)
+            // On a successful message send on the broadcast channel, the number
+            // of subscribers is returned. An error indicates there are no
+            // receivers, in which case, `0` should be returned.
             .map(|tx| tx.send(value).unwrap_or(0))
+            // If there is no entry for the channel key, then there are no
+            // subscribers. In this case, return `0`.
             .unwrap_or(0)
     }
 }
