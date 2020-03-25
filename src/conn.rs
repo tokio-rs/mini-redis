@@ -4,7 +4,7 @@ use bytes::{Buf, BytesMut};
 use std::io::{self, Cursor};
 use tokio::io::{AsyncReadExt, AsyncWriteExt, BufStream};
 use tokio::net::TcpStream;
-
+use tracing::debug;
 #[derive(Debug)]
 pub(crate) struct Connection {
     stream: BufStream<TcpStream>,
@@ -23,6 +23,7 @@ impl Connection {
         use frame::Error::Incomplete;
 
         loop {
+            debug!(?self.buffer);
             let mut buf = Cursor::new(&self.buffer[..]);
 
             match Frame::check(&mut buf) {
