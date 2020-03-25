@@ -32,11 +32,11 @@ impl Command {
         let command_name = parse.next_string()?.to_lowercase();
 
         let command = match &command_name[..] {
-            "get" => Command::Get(Get::parse(&mut parse)?),
-            "publish" => Command::Publish(Publish::parse(&mut parse)?),
-            "set" => Command::Set(Set::parse(&mut parse)?),
-            "subscribe" => Command::Subscribe(Subscribe::parse(&mut parse)?),
-            "unsubscribe" => Command::Unsubscribe(Unsubscribe::parse(&mut parse)?),
+            "get" => Command::Get(Get::parse_frames(&mut parse)?),
+            "publish" => Command::Publish(Publish::parse_frames(&mut parse)?),
+            "set" => Command::Set(Set::parse_frames(&mut parse)?),
+            "subscribe" => Command::Subscribe(Subscribe::parse_frames(&mut parse)?),
+            "unsubscribe" => Command::Unsubscribe(Unsubscribe::parse_frames(&mut parse)?),
             _ => return Err(ParseError::UnknownCommand(command_name)),
         };
 

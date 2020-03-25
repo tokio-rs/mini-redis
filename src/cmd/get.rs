@@ -13,7 +13,7 @@ impl Get {
     // with their debug implementations
     // see https://docs.rs/tracing/0.1.13/tracing/attr.instrument.html
     #[instrument]
-    pub(crate) fn parse(parse: &mut Parse) -> Result<Get, ParseError> {
+    pub(crate) fn parse_frames(parse: &mut Parse) -> Result<Get, ParseError> {
         let key = parse.next_string()?;
 
         // adding this debug event allows us to see what key is parsed

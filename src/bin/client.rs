@@ -1,6 +1,5 @@
-use bytes::Bytes;
 use clap::Clap;
-use mini_redis::{client, DEFAULT_PORT};
+use mini_redis::{client, cmd::Set, DEFAULT_PORT};
 use std::{io, str};
 
 #[tokio::main]
@@ -18,7 +17,7 @@ async fn main() -> io::Result<()> {
             }
             Ok(())
         }
-        Client::Set { key, value } => client.set(key, Bytes::from(value), None).await
+        Client::Set(opts) => client.set(opts).await,
     }
 }
 
@@ -33,8 +32,9 @@ struct Cli {
 
 #[derive(Clap, Debug)]
 enum Client {
-    #[clap(about = "Gets a value associated with a key")]
+    /// Gets a value associated with a key
     Get { key: String },
-    #[clap(about = "Associates a value with a key")]
-    Set { key: String, value: String },
+
+    /// Associates a value with a key
+    Set(Set),
 }

@@ -2,7 +2,7 @@ pub const DEFAULT_PORT: &str = "6379";
 
 pub mod client;
 
-mod cmd;
+pub mod cmd;
 use cmd::Command;
 
 mod conn;

@@ -10,7 +10,7 @@ pub struct Publish {
 }
 
 impl Publish {
-    pub(crate) fn parse(parse: &mut Parse) -> Result<Publish, ParseError> {
+    pub(crate) fn parse_frames(parse: &mut Parse) -> Result<Publish, ParseError> {
         let channel = parse.next_string()?;
         let message = parse.next_bytes()?;
 
