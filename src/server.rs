@@ -1,4 +1,4 @@
-use crate::{Command, Connection, Kv, Shutdown};
+use crate::{Command, Connection, Db, Shutdown};
 
 use anyhow::Result;
 use tokio::io;
@@ -8,7 +8,7 @@ use tokio::sync::broadcast;
 
 struct Server {
     /// Database state
-    kv: Kv,
+    db: Db,
 
     /// TCP listener
     listener: TcpListener,
@@ -20,7 +20,7 @@ struct Server {
 /// Handles a connections
 struct Handler {
     /// Database state
-    kv: Kv,
+    db: Db,
 
     /// The TCP connection decorated with the redis protocol encoder / decoder
     connection: Connection,
@@ -35,7 +35,7 @@ pub async fn run(port: &str) -> Result<()> {
 
     let mut server = Server {
         listener: TcpListener::bind(&format!("127.0.0.1:{}", port)).await?,
-        kv: Kv::new(),
+        db: Db::new(),
         notify_shutdown,
     };
 
@@ -61,7 +61,7 @@ impl Server {
             let (socket, _) = self.listener.accept().await?;
 
             let mut handler = Handler {
-                kv: self.kv.clone(),
+                db: self.db.clone(),
                 connection: Connection::new(socket),
                 shutdown: Shutdown::new(self.notify_shutdown.subscribe()),
             };
@@ -92,7 +92,7 @@ impl Handler {
 
             let cmd = Command::from_frame(frame)?;
 
-            cmd.apply(&self.kv, &mut self.connection, &mut self.shutdown)
+            cmd.apply(&self.db, &mut self.connection, &mut self.shutdown)
                 .await?;
         }
 

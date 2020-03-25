@@ -1,5 +1,5 @@
 use crate::cmd::{Parse, ParseError};
-use crate::{Connection, Frame, Kv};
+use crate::{Connection, Db, Frame};
 use clap::Clap;
 
 use bytes::Bytes;
@@ -59,9 +59,9 @@ impl Set {
     }
 
     #[instrument]
-    pub(crate) async fn apply(self, kv: &Kv, dst: &mut Connection) -> io::Result<()> {
+    pub(crate) async fn apply(self, db: &Db, dst: &mut Connection) -> io::Result<()> {
         // Set the value
-        kv.set(self.key, self.value, self.expire);
+        db.set(self.key, self.value, self.expire);
 
         let response = Frame::Simple("OK".to_string());
         debug!(?response);

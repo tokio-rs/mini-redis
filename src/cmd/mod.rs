@@ -10,7 +10,7 @@ pub use set::Set;
 mod subscribe;
 pub use subscribe::{Subscribe, Unsubscribe};
 
-use crate::{Connection, Frame, Kv, Parse, ParseError, Shutdown};
+use crate::{Connection, Frame, Db, Parse, ParseError, Shutdown};
 
 use std::io;
 use tracing::instrument;
@@ -54,17 +54,17 @@ impl Command {
 
     pub(crate) async fn apply(
         self,
-        kv: &Kv,
+        db: &Db,
         dst: &mut Connection,
         shutdown: &mut Shutdown,
     ) -> io::Result<()> {
         use Command::*;
 
         match self {
-            Get(cmd) => cmd.apply(kv, dst).await,
-            Publish(cmd) => cmd.apply(kv, dst).await,
-            Set(cmd) => cmd.apply(kv, dst).await,
-            Subscribe(cmd) => cmd.apply(kv, dst, shutdown).await,
+            Get(cmd) => cmd.apply(db, dst).await,
+            Publish(cmd) => cmd.apply(db, dst).await,
+            Set(cmd) => cmd.apply(db, dst).await,
+            Subscribe(cmd) => cmd.apply(db, dst, shutdown).await,
             // `Unsubscribe` cannot be applied. It may only be received from the
             // context of a `Subscribe` command.
             Unsubscribe(_) => unimplemented!(),

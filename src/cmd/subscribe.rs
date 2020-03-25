@@ -1,5 +1,5 @@
 use crate::cmd::{Parse, ParseError};
-use crate::{Command, Connection, Frame, Kv, Shutdown};
+use crate::{Command, Connection, Frame, Db, Shutdown};
 
 use bytes::Bytes;
 use std::io;
@@ -45,7 +45,7 @@ impl Subscribe {
     /// [here]: https://redis.io/topics/pubsub
     pub(crate) async fn apply(
         mut self,
-        kv: &Kv,
+        db: &Db,
         dst: &mut Connection,
         shutdown: &mut Shutdown,
     ) -> io::Result<()> {
@@ -71,7 +71,7 @@ impl Subscribe {
                 response.push_bulk(Bytes::copy_from_slice(channel.as_bytes()));
 
                 // Subscribe to channel
-                let rx = kv.subscribe(channel.clone());
+                let rx = db.subscribe(channel.clone());
 
                 // Track subscription in this client's subscription set.
                 subscriptions.insert(channel, rx);
