@@ -1,4 +1,8 @@
-# Logging
+# mini-redis
+
+`mini-redis` is a lightweight, idiomatic implementation of [Redis](https://redis.io) built with [tokio](https://tokio.rs).
+
+## Logging
 
 `mini-redis` uses [`tracing`](https://github.com/tokio-rs/tracing) to provide structured logs. Debug logs can be displayed by running:
 
