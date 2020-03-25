@@ -11,8 +11,8 @@ use conn::Connection;
 mod frame;
 use frame::Frame;
 
-mod kv;
-use kv::Kv;
+mod db;
+use db::Db;
 
 mod parse;
 use parse::{Parse, ParseError};

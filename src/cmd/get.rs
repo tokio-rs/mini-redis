@@ -1,4 +1,4 @@
-use crate::{Connection, Frame, Kv, Parse, ParseError};
+use crate::{Connection, Frame, Db, Parse, ParseError};
 
 use std::io;
 use tracing::{debug, instrument};
@@ -27,8 +27,8 @@ impl Get {
     }
 
     #[instrument]
-    pub(crate) async fn apply(self, kv: &Kv, dst: &mut Connection) -> io::Result<()> {
-        let response = if let Some(value) = kv.get(&self.key) {
+    pub(crate) async fn apply(self, db: &Db, dst: &mut Connection) -> io::Result<()> {
+        let response = if let Some(value) = db.get(&self.key) {
             Frame::Bulk(value)
         } else {
             Frame::Null
