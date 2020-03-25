@@ -1,4 +1,4 @@
-use crate::{Connection, Frame, Kv, Parse, ParseError};
+use crate::{Connection, Frame, Db, Parse, ParseError};
 
 use bytes::Bytes;
 use std::io;
@@ -17,9 +17,9 @@ impl Publish {
         Ok(Publish { channel, message })
     }
 
-    pub(crate) async fn apply(self, kv: &Kv, dst: &mut Connection) -> io::Result<()> {
+    pub(crate) async fn apply(self, db: &Db, dst: &mut Connection) -> io::Result<()> {
         // Set the value
-        let num_subscribers = kv.publish(&self.channel, self.message);
+        let num_subscribers = db.publish(&self.channel, self.message);
 
         let response = Frame::Integer(num_subscribers as u64);
         dst.write_frame(&response).await
