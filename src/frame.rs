@@ -148,6 +148,23 @@ impl Frame {
             _ => unimplemented!(),
         }
     }
+
+    pub(crate) fn try_as_str(&self) -> Result<String, String> {
+        match &self {
+            Frame::Simple(response) => Ok(response.to_string()),
+            Frame::Error(response) => Err(response.to_string()),
+            Frame::Integer(response) => Ok(format!("{}", response)),
+            Frame::Bulk(response) => Ok(format!("{:?}", response)),
+            Frame::Null => Ok("(nil)".to_string()),
+            Frame::Array(response) => {
+                let mut msg = "".to_string();
+                for item in response {
+                    msg.push_str(&item.try_as_str()?)
+                }
+                Ok(msg)
+            }
+        }
+    }
 }
 
 fn peek_u8(src: &mut Cursor<&[u8]>) -> Result<u8, Error> {

@@ -55,20 +55,16 @@ impl Client {
         let frame = Command::Set(opts).into_frame()?;
         self.conn.write_frame(&frame).await?;
         let response = self.conn.read_frame().await?;
-        let unknown_error = Box::new(Error::new(
-            ErrorKind::Other,
-            "unexpected response from server",
-        ));
         if let Some(response) = response {
             match response {
                 Frame::Simple(response) => {
                     if response == "OK" {
                         Ok(())
                     } else {
-                        Err(unknown_error)
+                        Err("unexpected response from server".into())
                     }
                 }
-                _ => Err(unknown_error),
+                _ => Err("unexpected response from server".into()),
             }
         } else {
             Err(Box::new(Error::new(
