@@ -3,10 +3,12 @@ use crate::{
         utils::{bytes_from_str, duration_from_ms_str},
         Set,
     },
+    frame::Frame,
     Command, Connection,
 };
 
 use bytes::Bytes;
+use std::io::{Error, ErrorKind};
 use tokio::net::{TcpStream, ToSocketAddrs};
 
 /// Mini asynchronous Redis client
@@ -51,6 +53,28 @@ impl Client {
 
     pub async fn set_with_opts(&mut self, opts: Set) -> Result<(), Box<dyn std::error::Error>> {
         let frame = Command::Set(opts).into_frame()?;
-        Ok(self.conn.write_frame(&frame).await?)
+        self.conn.write_frame(&frame).await?;
+        let response = self.conn.read_frame().await?;
+        let unknown_error = Box::new(Error::new(
+            ErrorKind::Other,
+            "unexpected response from server",
+        ));
+        if let Some(response) = response {
+            match response {
+                Frame::Simple(response) => {
+                    if response == "OK" {
+                        Ok(())
+                    } else {
+                        Err(unknown_error)
+                    }
+                }
+                _ => Err(unknown_error),
+            }
+        } else {
+            Err(Box::new(Error::new(
+                ErrorKind::ConnectionReset,
+                "connection reset by server",
+            )))
+        }
     }
 }

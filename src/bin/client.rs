@@ -17,7 +17,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             Ok(())
         }
-        Client::Set(opts) => client.set_with_opts(opts).await,
+        Client::Set(opts) => match client.set_with_opts(opts).await {
+            Ok(_) => {
+                println!("OK");
+                Ok(())
+            }
+            Err(e) => {
+                eprintln!("{}", e);
+                Err(e)
+            }
+        },
     }
 }
 
