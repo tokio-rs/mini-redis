@@ -1,6 +1,6 @@
+use anyhow::{anyhow, Result};
 use clap::Clap;
 use mini_redis::{server, DEFAULT_PORT};
-use anyhow::{anyhow, Result};
 
 #[tokio::main]
 pub async fn main() -> Result<()> {

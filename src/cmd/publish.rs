@@ -1,4 +1,4 @@
-use crate::{Connection, Frame, Db, Parse, ParseError};
+use crate::{Connection, Db, Frame, Parse, ParseError};
 
 use bytes::Bytes;
 use std::io;

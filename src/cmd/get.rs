@@ -1,4 +1,4 @@
-use crate::{Connection, Frame, Db, Parse, ParseError};
+use crate::{Connection, Db, Frame, Parse, ParseError};
 
 use std::io;
 use tracing::{debug, instrument};
@@ -19,7 +19,7 @@ impl Get {
         // adding this debug event allows us to see what key is parsed
         // the ? sigil tells `tracing` to use the `Debug` implementation
         // get parse events can be filtered by running
-        // RUST_LOG=mini_redis::cmd::get[parse]=debug cargo run --bin server
+        // RUST_LOG=mini_redis::cmd::get[parse_frames]=debug cargo run --bin server
         // see https://docs.rs/tracing/0.1.13/tracing/#recording-fields
         debug!(?key);
 

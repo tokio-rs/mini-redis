@@ -10,7 +10,9 @@ pub use set::Set;
 mod subscribe;
 pub use subscribe::{Subscribe, Unsubscribe};
 
-use crate::{Connection, Frame, Db, Parse, ParseError, Shutdown};
+pub(crate) mod utils;
+
+use crate::{Connection, Db, Frame, Parse, ParseError, Shutdown};
 
 use std::io;
 use tracing::instrument;
@@ -44,9 +46,9 @@ impl Command {
         Ok(command)
     }
 
-    pub(crate) fn to_frame(self) -> Result<Frame, ParseError> {
+    pub(crate) fn into_frame(self) -> Result<Frame, ParseError> {
         let frame = match self {
-            Command::Set(set) => set.get_frame(),
+            Command::Set(set) => set.into_frame(),
             _ => unimplemented!(),
         };
         Ok(frame)

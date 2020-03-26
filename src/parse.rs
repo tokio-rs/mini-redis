@@ -1,7 +1,7 @@
 use crate::Frame;
 
 use bytes::Bytes;
-use std::{io, str, vec};
+use std::{error, fmt, io, str, vec};
 
 /// Utility for parsing a command
 #[derive(Debug)]
@@ -76,15 +76,23 @@ impl Parse {
 
 impl From<ParseError> for io::Error {
     fn from(src: ParseError) -> io::Error {
-        use ParseError::*;
+        io::Error::new(io::ErrorKind::Other, format!("{}", src))
+    }
+}
 
-        io::Error::new(
-            io::ErrorKind::Other,
-            match src {
-                EndOfStream => "end of stream".to_string(),
-                Invalid => "invalid".to_string(),
-                UnknownCommand(cmd) => format!("unknown command `{}`", cmd),
-            },
-        )
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let msg = match self {
+            ParseError::EndOfStream => "end of stream".to_string(),
+            ParseError::Invalid => "invalid".to_string(),
+            ParseError::UnknownCommand(cmd) => format!("unknown command `{}`", cmd),
+        };
+        write!(f, "{}", &msg)
+    }
+}
+
+impl std::error::Error for ParseError {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+        None
     }
 }

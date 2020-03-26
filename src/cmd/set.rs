@@ -1,4 +1,7 @@
-use crate::cmd::{Parse, ParseError};
+use crate::cmd::{
+    utils::{bytes_from_str, duration_from_ms_str},
+    Parse, ParseError,
+};
 use crate::{Connection, Db, Frame};
 use clap::Clap;
 
@@ -17,17 +20,8 @@ pub struct Set {
     pub(crate) value: Bytes,
 
     /// duration in milliseconds
-    #[clap(parse(try_from_str = duration_from_ms))]
+    #[clap(parse(try_from_str = duration_from_ms_str))]
     pub(crate) expire: Option<Duration>,
-}
-
-fn duration_from_ms(src: &str) -> Result<Duration, std::num::ParseIntError> {
-    let millis = src.parse::<u64>()?;
-    Ok(Duration::from_millis(millis))
-}
-
-fn bytes_from_str(src: &str) -> Bytes {
-    Bytes::from(src.to_string())
 }
 
 impl Set {
@@ -68,7 +62,7 @@ impl Set {
         dst.write_frame(&response).await
     }
 
-    pub(crate) fn get_frame(self) -> Frame {
+    pub(crate) fn into_frame(self) -> Frame {
         let mut frame = Frame::array();
         frame.push_bulk(Bytes::from("set".as_bytes()));
         frame.push_bulk(Bytes::from(self.key.into_bytes()));

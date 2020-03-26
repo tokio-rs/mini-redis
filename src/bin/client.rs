@@ -1,9 +1,9 @@
 use clap::Clap;
 use mini_redis::{client, cmd::Set, DEFAULT_PORT};
-use std::{io, str};
+use std::str;
 
 #[tokio::main]
-async fn main() -> io::Result<()> {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     let port = cli.port.unwrap_or(DEFAULT_PORT.to_string());
     let mut client = client::connect(&format!("127.0.0.1:{}", port)).await?;
@@ -17,7 +17,7 @@ async fn main() -> io::Result<()> {
             }
             Ok(())
         }
-        Client::Set(opts) => client.set(opts).await,
+        Client::Set(opts) => client.set_with_opts(opts).await,
     }
 }
 
