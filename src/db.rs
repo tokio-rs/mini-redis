@@ -86,7 +86,8 @@ impl Db {
             // Only notify the worker task if the newly inserted expiration is the
             // **next** key to evict. In this case, the worker needs to be woken up
             // to update its state.
-            notify = state.next_expiration()
+            notify = state
+                .next_expiration()
                 .map(|expiration| expiration > when)
                 .unwrap_or(true);
 
@@ -95,11 +96,14 @@ impl Db {
         });
 
         // Insert the entry.
-        let prev = state.entries.insert(key, Entry {
-            id,
-            data: value,
-            expires_at,
-        });
+        let prev = state.entries.insert(
+            key,
+            Entry {
+                id,
+                data: value,
+                expires_at,
+            },
+        );
 
         if let Some(prev) = prev {
             if let Some(when) = prev.expires_at {
@@ -180,7 +184,10 @@ impl Shared {
 
 impl State {
     fn next_expiration(&self) -> Option<Instant> {
-        self.expirations.keys().next().map(|expiration| expiration.0)
+        self.expirations
+            .keys()
+            .next()
+            .map(|expiration| expiration.0)
     }
 }
 

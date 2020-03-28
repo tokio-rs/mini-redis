@@ -6,7 +6,7 @@ use std::io::Cursor;
 use std::num::TryFromIntError;
 use std::string::FromUtf8Error;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) enum Frame {
     Simple(String),
     Error(String),
@@ -146,6 +146,23 @@ impl Frame {
                 Ok(Frame::Array(out))
             }
             _ => unimplemented!(),
+        }
+    }
+
+    pub(crate) fn try_as_str(&self) -> Result<String, String> {
+        match &self {
+            Frame::Simple(response) => Ok(response.to_string()),
+            Frame::Error(response) => Err(response.to_string()),
+            Frame::Integer(response) => Ok(format!("{}", response)),
+            Frame::Bulk(response) => Ok(format!("{:?}", response)),
+            Frame::Null => Ok("(nil)".to_string()),
+            Frame::Array(response) => {
+                let mut msg = "".to_string();
+                for item in response {
+                    msg.push_str(&item.try_as_str()?)
+                }
+                Ok(msg)
+            }
         }
     }
 }

@@ -1,10 +1,9 @@
-use bytes::Bytes;
 use clap::Clap;
-use mini_redis::{client, DEFAULT_PORT};
-use std::{io, str};
+use mini_redis::{client, cmd::Set, DEFAULT_PORT};
+use std::str;
 
 #[tokio::main]
-async fn main() -> io::Result<()> {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     let port = cli.port.unwrap_or(DEFAULT_PORT.to_string());
     let mut client = client::connect(&format!("127.0.0.1:{}", port)).await?;
@@ -18,7 +17,16 @@ async fn main() -> io::Result<()> {
             }
             Ok(())
         }
-        Client::Set { key, value } => client.set(&key, Bytes::from(value)).await,
+        Client::Set(opts) => match client.set_with_opts(opts).await {
+            Ok(_) => {
+                println!("OK");
+                Ok(())
+            }
+            Err(e) => {
+                eprintln!("{}", e);
+                Err(e)
+            }
+        },
     }
 }
 
@@ -33,8 +41,9 @@ struct Cli {
 
 #[derive(Clap, Debug)]
 enum Client {
-    #[clap(about = "Gets a value associated with a key")]
+    /// Gets a value associated with a key
     Get { key: String },
-    #[clap(about = "Associates a value with a key")]
-    Set { key: String, value: String },
+
+    /// Associates a value with a key
+    Set(Set),
 }

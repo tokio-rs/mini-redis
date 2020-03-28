@@ -1,5 +1,5 @@
 use crate::cmd::{Parse, ParseError};
-use crate::{Command, Connection, Frame, Db, Shutdown};
+use crate::{Command, Connection, Db, Frame, Shutdown};
 
 use bytes::Bytes;
 use std::io;
@@ -17,7 +17,7 @@ pub struct Unsubscribe {
 }
 
 impl Subscribe {
-    pub(crate) fn parse(parse: &mut Parse) -> Result<Subscribe, ParseError> {
+    pub(crate) fn parse_frames(parse: &mut Parse) -> Result<Subscribe, ParseError> {
         use ParseError::EndOfStream;
 
         // There must be at least one channel
@@ -151,7 +151,7 @@ impl Subscribe {
 }
 
 impl Unsubscribe {
-    pub(crate) fn parse(parse: &mut Parse) -> Result<Unsubscribe, ParseError> {
+    pub(crate) fn parse_frames(parse: &mut Parse) -> Result<Unsubscribe, ParseError> {
         use ParseError::EndOfStream;
 
         // There may be no channels listed.
