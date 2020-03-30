@@ -86,7 +86,7 @@ impl Client {
     async fn read_response(&mut self) -> crate::Result<Frame> {
         let response = self.conn.read_frame().await?;
 
-        debug!(response = ?response);
+        debug!(?response);
 
         match response {
             Some(Frame::Error(msg)) => {
