@@ -1,26 +1,19 @@
-use crate::cmd::{
-    utils::{bytes_from_str, duration_from_ms_str},
-    Parse, ParseError,
-};
 use crate::{Connection, Db, Frame};
-use clap::Clap;
+use crate::cmd::{Parse, ParseError};
 
 use bytes::Bytes;
-use std::io;
 use std::time::Duration;
 use tracing::{debug, instrument};
 
-#[derive(Clap, Debug)]
+#[derive(Debug)]
 pub struct Set {
     /// the lookup key
     pub(crate) key: String,
 
     /// the value to be stored
-    #[clap(parse(from_str = bytes_from_str))]
     pub(crate) value: Bytes,
 
-    /// duration in milliseconds
-    #[clap(parse(try_from_str = duration_from_ms_str))]
+    /// When to expire the key
     pub(crate) expire: Option<Duration>,
 }
 
@@ -53,13 +46,14 @@ impl Set {
     }
 
     #[instrument]
-    pub(crate) async fn apply(self, db: &Db, dst: &mut Connection) -> io::Result<()> {
+    pub(crate) async fn apply(self, db: &Db, dst: &mut Connection) -> crate::Result<()> {
         // Set the value
         db.set(self.key, self.value, self.expire);
 
         let response = Frame::Simple("OK".to_string());
         debug!(?response);
-        dst.write_frame(&response).await
+        dst.write_frame(&response).await?;
+        Ok(())
     }
 
     pub(crate) fn into_frame(self) -> Frame {

@@ -1,7 +1,6 @@
-use tokio::io;
-
 use bytes::{Buf, Bytes};
 use std::convert::TryInto;
+use std::fmt;
 use std::io::Cursor;
 use std::num::TryFromIntError;
 use std::string::FromUtf8Error;
@@ -16,6 +15,7 @@ pub(crate) enum Frame {
     Array(Vec<Box<Frame>>),
 }
 
+#[derive(Debug)]
 pub(crate) enum Error {
     /// Not enough data is available to parse a message
     Incomplete,
@@ -113,7 +113,7 @@ impl Frame {
                 if b'-' == peek_u8(src)? {
                     let line = get_line(src)?;
 
-                    if line != b"-1\r\n" {
+                    if line != b"-1" {
                         return Err(Error::Invalid);
                     }
 
@@ -149,19 +149,34 @@ impl Frame {
         }
     }
 
-    pub(crate) fn try_as_str(&self) -> Result<String, String> {
-        match &self {
-            Frame::Simple(response) => Ok(response.to_string()),
-            Frame::Error(response) => Err(response.to_string()),
-            Frame::Integer(response) => Ok(format!("{}", response)),
-            Frame::Bulk(response) => Ok(format!("{:?}", response)),
-            Frame::Null => Ok("(nil)".to_string()),
-            Frame::Array(response) => {
-                let mut msg = "".to_string();
-                for item in response {
-                    msg.push_str(&item.try_as_str()?)
+    /// Converts the frame to an "unexepcted frame" error
+    pub(crate) fn to_error(&self) -> crate::Error {
+        format!("unexpected frame: {}", self).into()
+    }
+}
+
+impl fmt::Display for Frame {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        use std::str;
+
+        match self {
+            Frame::Simple(response) => response.fmt(fmt),
+            Frame::Error(msg) => write!(fmt, "error: {}", msg),
+            Frame::Integer(num) => num.fmt(fmt),
+            Frame::Bulk(msg) => match str::from_utf8(msg) {
+                Ok(string) => string.fmt(fmt),
+                Err(_) => write!(fmt, "{:?}", msg),
+            },
+            Frame::Null => "(nil)".fmt(fmt),
+            Frame::Array(parts) => {
+                for (i, part) in parts.iter().enumerate() {
+                    if i > 0 {
+                        write!(fmt, " ")?;
+                        part.fmt(fmt)?;
+                    }
                 }
-                Ok(msg)
+
+                Ok(())
             }
         }
     }
@@ -221,12 +236,6 @@ fn get_line<'a>(src: &mut Cursor<&'a [u8]>) -> Result<&'a [u8], Error> {
     Err(Error::Incomplete)
 }
 
-impl From<Error> for io::Error {
-    fn from(_src: Error) -> io::Error {
-        unimplemented!();
-    }
-}
-
 impl From<FromUtf8Error> for Error {
     fn from(_src: FromUtf8Error) -> Error {
         unimplemented!();
@@ -236,5 +245,16 @@ impl From<FromUtf8Error> for Error {
 impl From<TryFromIntError> for Error {
     fn from(_src: TryFromIntError) -> Error {
         unimplemented!();
+    }
+}
+
+impl std::error::Error for Error {}
+
+impl fmt::Display for Error {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Error::Incomplete => "stream ended early".fmt(fmt),
+            Error::Invalid => "invalid frame format".fmt(fmt),
+        }
     }
 }

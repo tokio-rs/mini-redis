@@ -1,5 +1,6 @@
 use tokio::sync::broadcast;
 
+#[derive(Debug)]
 pub(crate) struct Shutdown {
     shutdown: bool,
     notify: broadcast::Receiver<()>,

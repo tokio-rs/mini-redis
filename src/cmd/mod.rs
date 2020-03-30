@@ -10,12 +10,7 @@ pub use set::Set;
 mod subscribe;
 pub use subscribe::{Subscribe, Unsubscribe};
 
-pub(crate) mod utils;
-
 use crate::{Connection, Db, Frame, Parse, ParseError, Shutdown};
-
-use std::io;
-use tracing::instrument;
 
 #[derive(Debug)]
 pub(crate) enum Command {
@@ -27,7 +22,6 @@ pub(crate) enum Command {
 }
 
 impl Command {
-    #[instrument]
     pub(crate) fn from_frame(frame: Frame) -> Result<Command, ParseError> {
         let mut parse = Parse::new(frame)?;
 
@@ -46,20 +40,12 @@ impl Command {
         Ok(command)
     }
 
-    pub(crate) fn into_frame(self) -> Result<Frame, ParseError> {
-        let frame = match self {
-            Command::Set(set) => set.into_frame(),
-            _ => unimplemented!(),
-        };
-        Ok(frame)
-    }
-
     pub(crate) async fn apply(
         self,
         db: &Db,
         dst: &mut Connection,
         shutdown: &mut Shutdown,
-    ) -> io::Result<()> {
+    ) -> crate::Result<()> {
         use Command::*;
 
         match self {

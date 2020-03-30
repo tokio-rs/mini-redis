@@ -1,22 +1,18 @@
-use crate::{
-    cmd::{
-        utils::{bytes_from_str, duration_from_ms_str},
-        Set,
-    },
-    frame::Frame,
-    Command, Connection,
-};
+use crate::{Connection, Frame};
+use crate::cmd::{Get, Set};
 
 use bytes::Bytes;
 use std::io::{Error, ErrorKind};
+use std::time::Duration;
 use tokio::net::{TcpStream, ToSocketAddrs};
+use tracing::{debug, instrument};
 
 /// Mini asynchronous Redis client
 pub struct Client {
     conn: Connection,
 }
 
-pub async fn connect<T: ToSocketAddrs>(addr: T) -> Result<Client, Box<dyn std::error::Error>> {
+pub async fn connect<T: ToSocketAddrs>(addr: T) -> crate::Result<Client> {
     let socket = TcpStream::connect(addr).await?;
     let conn = Connection::new(socket);
 
@@ -24,53 +20,89 @@ pub async fn connect<T: ToSocketAddrs>(addr: T) -> Result<Client, Box<dyn std::e
 }
 
 impl Client {
-    pub async fn get(&mut self, key: &str) -> Result<Option<Bytes>, Box<dyn std::error::Error>> {
-        unimplemented!();
+    /// Get the value of a key
+    #[instrument(skip(self))]
+    pub async fn get(&mut self, key: &str) -> crate::Result<Option<Bytes>> {
+        // Create a `Get` command for the `key` and convert it to a frame.
+        let frame = Get::new(key).into_frame();
+
+        debug!(request = ?frame);
+
+        // Write the frame to the socket.
+        self.conn.write_frame(&frame).await?;
+
+        // Wait for the response.
+        match self.read_response().await? {
+            Frame::Simple(value) => Ok(Some(value.into())),
+            Frame::Bulk(value) => Ok(Some(value)),
+            Frame::Null => Ok(None),
+            frame => Err(frame.to_error()),
+        }
     }
 
-    pub async fn set(&mut self, key: &str, value: &str) -> Result<(), Box<dyn std::error::Error>> {
-        let opts = Set {
+    /// Set the value of a key to `value`.
+    #[instrument(skip(self))]
+    pub async fn set(&mut self, key: &str, value: Bytes) -> crate::Result<()> {
+        self.set_cmd(Set {
             key: key.to_string(),
-            value: bytes_from_str(value),
+            value: value,
             expire: None,
-        };
-        self.set_with_opts(opts).await
+        }).await
     }
 
-    pub async fn set_with_expiration(
+    /// Set the value of a key to `value`. The value expires after `expiration`.
+    #[instrument(skip(self))]
+    pub async fn set_expires(
         &mut self,
         key: &str,
-        value: &str,
-        expiration: &str,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let opts = Set {
+        value: Bytes,
+        expiration: Duration,
+    ) -> crate::Result<()> {
+        self.set_cmd(Set {
             key: key.to_string(),
-            value: bytes_from_str(value),
-            expire: Some(duration_from_ms_str(expiration)?),
-        };
-        self.set_with_opts(opts).await
+            value: value.into(),
+            expire: Some(expiration),
+        }).await
     }
 
-    pub async fn set_with_opts(&mut self, opts: Set) -> Result<(), Box<dyn std::error::Error>> {
-        let frame = Command::Set(opts).into_frame()?;
+    async fn set_cmd(&mut self, cmd: Set) -> crate::Result<()> {
+        // Convert the `Set` command into a frame
+        let frame = cmd.into_frame();
+
+        debug!(request = ?frame);
+
+        // Write the frame to the socket
         self.conn.write_frame(&frame).await?;
+
+        // Read the response
+        match self.read_response().await? {
+            Frame::Simple(response) if response == "OK" => Ok(()),
+            frame => Err(frame.to_error()),
+        }
+    }
+
+    /// Reads a response frame from the socket. If an `Error` frame is read, it
+    /// is converted to `Err`.
+    async fn read_response(&mut self) -> crate::Result<Frame> {
         let response = self.conn.read_frame().await?;
-        if let Some(response) = response {
-            match response {
-                Frame::Simple(response) => {
-                    if response == "OK" {
-                        Ok(())
-                    } else {
-                        Err("unexpected response from server".into())
-                    }
-                }
-                _ => Err("unexpected response from server".into()),
+
+        debug!(response = ?response);
+
+        match response {
+            Some(Frame::Error(msg)) => {
+                Err(msg.into())
             }
-        } else {
-            Err(Box::new(Error::new(
-                ErrorKind::ConnectionReset,
-                "connection reset by server",
-            )))
+            Some(frame) => Ok(frame),
+            None => {
+                // Receiving `None` here indicates the server has closed the
+                // connection without sending a frame. This is unexpected and is
+                // represented as a "connection reset by peer" error.
+                let err = Error::new(
+                    ErrorKind::ConnectionReset,
+                    "connection reset by server");
+
+                Err(err.into())
+            }
         }
     }
 }
