@@ -45,7 +45,7 @@ impl Set {
         Ok(Set { key, value, expire })
     }
 
-    #[instrument]
+    #[instrument(skip(db))]
     pub(crate) async fn apply(self, db: &Db, dst: &mut Connection) -> crate::Result<()> {
         // Set the value
         db.set(self.key, self.value, self.expire);
