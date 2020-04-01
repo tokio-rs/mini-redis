@@ -35,12 +35,20 @@ enum Command {
         #[clap(parse(from_str = bytes_from_str))]
         value: Bytes,
 
-        /// Expire the value after specified amount of time.
+        /// Expire the value after specified amount of time
         #[clap(parse(try_from_str = duration_from_ms_str))]
         expires: Option<Duration>,
     },
 }
 
+/// Entry point for CLI tool.
+///
+/// The `[tokio::main]` annotation signals that the Tokio runtime should be
+/// started when the function is called. The body of the function is executed
+/// within the newly spawned runtime.
+///
+/// `basic_scheduler` is used here to avoid spawning background threads. The CLI
+/// tool use case benefits more by being lighter instead of multi-threaded.
 #[tokio::main(basic_scheduler)]
 async fn main() -> mini_redis::Result<()> {
     // Enable logging
