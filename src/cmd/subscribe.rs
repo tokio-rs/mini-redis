@@ -1,8 +1,7 @@
-use crate::cmd::{Parse, ParseError};
 use crate::{Command, Connection, Db, Frame, Shutdown};
+use crate::cmd::{Parse, ParseError};
 
 use bytes::Bytes;
-use std::io;
 use tokio::select;
 use tokio::stream::{StreamExt, StreamMap};
 
@@ -48,7 +47,7 @@ impl Subscribe {
         db: &Db,
         dst: &mut Connection,
         shutdown: &mut Shutdown,
-    ) -> io::Result<()> {
+    ) -> crate::Result<()> {
         // Each individual channel subscription is handled using a
         // `sync::broadcast` channel. Messages are then fanned out to all
         // clients currently subscribed to the channels.

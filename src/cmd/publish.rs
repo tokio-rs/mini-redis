@@ -1,7 +1,6 @@
 use crate::{Connection, Db, Frame, Parse, ParseError};
 
 use bytes::Bytes;
-use std::io;
 
 #[derive(Debug)]
 pub struct Publish {
@@ -17,11 +16,12 @@ impl Publish {
         Ok(Publish { channel, message })
     }
 
-    pub(crate) async fn apply(self, db: &Db, dst: &mut Connection) -> io::Result<()> {
+    pub(crate) async fn apply(self, db: &Db, dst: &mut Connection) -> crate::Result<()> {
         // Set the value
         let num_subscribers = db.publish(&self.channel, self.message);
 
         let response = Frame::Integer(num_subscribers as u64);
-        dst.write_frame(&response).await
+        dst.write_frame(&response).await?;
+        Ok(())
     }
 }

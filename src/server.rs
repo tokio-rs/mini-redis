@@ -1,11 +1,11 @@
 use crate::{Command, Connection, Db, Shutdown};
 
-use anyhow::Result;
-use tokio::io;
 use tokio::net::TcpListener;
 use tokio::signal;
 use tokio::sync::broadcast;
+use tracing::{debug, error, instrument, info};
 
+#[derive(Debug)]
 struct Server {
     /// Database state
     db: Db,
@@ -18,6 +18,7 @@ struct Server {
 }
 
 /// Handles a connections
+#[derive(Debug)]
 struct Handler {
     /// Database state
     db: Db,
@@ -30,7 +31,7 @@ struct Handler {
 }
 
 /// Run the mini-redis server.
-pub async fn run(port: &str) -> Result<()> {
+pub async fn run(port: &str) -> crate::Result<()> {
     let (notify_shutdown, _) = broadcast::channel(1);
 
     let mut server = Server {
@@ -43,11 +44,11 @@ pub async fn run(port: &str) -> Result<()> {
         res = server.run() => {
             if let Err(err) = res {
                 // TODO: gracefully handle this error
-                eprintln!("failed to accept; err = {}", err);
+                error!(cause = %err, "failed to accept");
             }
         }
         _ = signal::ctrl_c() => {
-            println!("shutting down");
+            info!("shutting down");
         }
     }
 
@@ -56,7 +57,9 @@ pub async fn run(port: &str) -> Result<()> {
 
 impl Server {
     /// Run the server
-    async fn run(&mut self) -> io::Result<()> {
+    async fn run(&mut self) -> crate::Result<()> {
+        info!("accepting inbound connections");
+
         loop {
             let (socket, _) = self.listener.accept().await?;
 
@@ -67,8 +70,8 @@ impl Server {
             };
 
             tokio::spawn(async move {
-                if let Err(e) = handler.run().await {
-                    eprintln!("client err = {:?}", e);
+                if let Err(err) = handler.run().await {
+                    error!(cause = ?err, "connection error");
                 }
             });
         }
@@ -76,7 +79,8 @@ impl Server {
 }
 
 impl Handler {
-    async fn run(&mut self) -> io::Result<()> {
+    #[instrument(skip(self))]
+    async fn run(&mut self) -> crate::Result<()> {
         while !self.shutdown.is_shutdown() {
             let maybe_frame = tokio::select! {
                 res = self.connection.read_frame() => res?,
@@ -91,6 +95,8 @@ impl Handler {
             };
 
             let cmd = Command::from_frame(frame)?;
+
+            debug!(?cmd);
 
             cmd.apply(&self.db, &mut self.connection, &mut self.shutdown)
                 .await?;
