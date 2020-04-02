@@ -1,7 +1,7 @@
 use crate::{Command, Connection, Db, Shutdown};
 
+use std::future::Future;
 use tokio::net::TcpListener;
-use tokio::signal;
 use tokio::sync::broadcast;
 use tracing::{debug, error, instrument, info};
 
@@ -31,11 +31,11 @@ struct Handler {
 }
 
 /// Run the mini-redis server.
-pub async fn run(port: &str) -> crate::Result<()> {
+pub async fn run(listener: TcpListener, shutdown: impl Future) -> crate::Result<()> {
     let (notify_shutdown, _) = broadcast::channel(1);
 
     let mut server = Server {
-        listener: TcpListener::bind(&format!("127.0.0.1:{}", port)).await?,
+        listener,
         db: Db::new(),
         notify_shutdown,
     };
@@ -47,7 +47,7 @@ pub async fn run(port: &str) -> crate::Result<()> {
                 error!(cause = %err, "failed to accept");
             }
         }
-        _ = signal::ctrl_c() => {
+        _ = shutdown => {
             info!("shutting down");
         }
     }

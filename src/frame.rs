@@ -80,7 +80,7 @@ impl Frame {
 
                 Ok(())
             }
-            _ => unimplemented!(),
+            _ => Err(Error::Invalid),
         }
     }
 
