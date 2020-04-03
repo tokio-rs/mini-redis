@@ -6,8 +6,12 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio::task::JoinHandle;
 use tokio::time::{self, Duration};
 
+/// A basic "hello world" style test. A server instance is started in a
+/// background task. A client TCP connection is then established and raw redis
+/// commands are sent to the server. The response is evaluated at the byte
+/// level.
 #[tokio::test]
-async fn basic_kv_usage() {
+async fn key_value_get_set() {
     let (addr, _handle) = start_server().await;
 
     // Establish a connection to the server
@@ -42,8 +46,16 @@ async fn basic_kv_usage() {
     assert_eq!(b"$5\r\nworld\r\n", &response);
 }
 
+/// Similar to the basic key-value test, however, this time timeouts will be
+/// tested. This test demonstrates how to test time related behavior.
+///
+/// When writing tests, it is useful to remove sources of non-determinism. Time
+/// is a source of non determism. Here, we "pause" time using the
+/// `time::pause()` function. This function is available with the `test-util`
+/// feature flag. This allows us to deterministically control how time appears
+/// to advance to the application.
 #[tokio::test]
-async fn key_timeout() {
+async fn key_value_timeout() {
     tokio::time::pause();
 
     let (addr, _handle) = start_server().await;
