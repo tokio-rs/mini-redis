@@ -50,7 +50,7 @@ async fn key_value_get_set() {
 /// tested. This test demonstrates how to test time related behavior.
 ///
 /// When writing tests, it is useful to remove sources of non-determinism. Time
-/// is a source of non determism. Here, we "pause" time using the
+/// is a source of non-determinism. Here, we "pause" time using the
 /// `time::pause()` function. This function is available with the `test-util`
 /// feature flag. This allows us to deterministically control how time appears
 /// to advance to the application.
