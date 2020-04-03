@@ -1,6 +1,8 @@
 use mini_redis::{server, DEFAULT_PORT};
 
 use clap::Clap;
+use tokio::net::TcpListener;
+use tokio::signal;
 
 #[tokio::main]
 pub async fn main() -> mini_redis::Result<()> {
@@ -10,7 +12,11 @@ pub async fn main() -> mini_redis::Result<()> {
 
     let cli = Cli::parse();
     let port = cli.port.unwrap_or(DEFAULT_PORT.to_string());
-    server::run(&port).await
+
+    // Bind a TCP listener
+    let listener = TcpListener::bind(&format!("127.0.0.1:{}", port)).await?;
+
+    server::run(listener, signal::ctrl_c()).await
 }
 
 #[derive(Clap, Debug)]

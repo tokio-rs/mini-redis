@@ -1,7 +1,7 @@
 use crate::{Command, Connection, Db, Shutdown};
 
+use std::future::Future;
 use tokio::net::TcpListener;
-use tokio::signal;
 use tokio::sync::broadcast;
 use tracing::{debug, error, instrument, info};
 
@@ -31,15 +31,29 @@ struct Handler {
 }
 
 /// Run the mini-redis server.
-pub async fn run(port: &str) -> crate::Result<()> {
+///
+/// Accepts connections from the supplied listener. For each inbound connection,
+/// a task is spawned to handle that connection. The server runs until the
+/// `shutdown` future completes, at which point the server shuts down
+/// gracefully.
+///
+/// `tokio::signal::ctrl_c()` can be used as the `shutdown` argument. This will
+/// listen for a SIGINT signal.
+pub async fn run(listener: TcpListener, shutdown: impl Future) -> crate::Result<()> {
+    // A broadcast channel is used to signal shutdown to each of the active
+    // connections. When the provided `shutdown` future completes
     let (notify_shutdown, _) = broadcast::channel(1);
 
     let mut server = Server {
-        listener: TcpListener::bind(&format!("127.0.0.1:{}", port)).await?,
+        listener,
         db: Db::new(),
         notify_shutdown,
     };
 
+    // Concurrently run the server and listen for the `shutdown` signal. The
+    // server task runs until an error is encountered, so under normal
+    // circumstances, this `select!` statement runs until the `shutdown` signal
+    // is received.
     tokio::select! {
         res = server.run() => {
             if let Err(err) = res {
@@ -47,7 +61,7 @@ pub async fn run(port: &str) -> crate::Result<()> {
                 error!(cause = %err, "failed to accept");
             }
         }
-        _ = signal::ctrl_c() => {
+        _ = shutdown => {
             info!("shutting down");
         }
     }
@@ -57,6 +71,9 @@ pub async fn run(port: &str) -> crate::Result<()> {
 
 impl Server {
     /// Run the server
+    ///
+    /// Listen for inbound connections. For each inbound connection, spawn a
+    /// task to process that connection.
     async fn run(&mut self) -> crate::Result<()> {
         info!("accepting inbound connections");
 
