@@ -156,6 +156,7 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) -> crate::Result<
             }
         }
         _ = shutdown => {
+            // The shutdown signal has been received.
             info!("shutting down");
         }
     }
@@ -195,21 +196,41 @@ impl Listener {
             // we manually add a new permit when processing completes.
             self.limit_connections.acquire().await.forget();
 
+            // Accept a new socket. This will attempt to perform error handling.
+            // An error returned from here is non-recoverable.
             let socket = self.accept().await?;
 
+            // Create the necessary per-connection handler state.
             let mut handler = Handler {
+                // Get a handle to the shared database. Internally, this is an
+                // `Arc`, so a clone only increments the ref count.
                 db: self.db.clone(),
+
+                // Initialize the connection state. This allocates read/write
+                // buffers to perform redis protocol frame parsing.
                 connection: Connection::new(socket),
+
+                // The connection state needs a handle to the max connections
+                // semaphore. When the handler is done processing the
+                // connection, a permit is added back to the semaphore.
                 limit_connections: self.limit_connections.clone(),
+
+                // Receive shutdown notifcations.
                 shutdown: Shutdown::new(self.notify_shutdown.subscribe()),
             };
 
+            // Spawn a new task to process the connections. Tokio tasks are like
+            // asynchronous green threads and are executed concurrently.
             tokio::spawn(async move {
+                // Process the connection. If an error is encountered, log it.
                 if let Err(err) = handler.run().await {
                     error!(cause = ?err, "connection error");
                 }
 
                 // Add a permit back to the semaphore.
+                //
+                // Doing so unblocks the listener if the max number of
+                // connections has been reached.
                 handler.limit_connections.add_permits(1);
             });
         }
@@ -249,25 +270,53 @@ impl Listener {
 }
 
 impl Handler {
+    /// Process a single connection.
+    ///
+    /// Request frames are read from the socket and processed. Responses are
+    /// written back to the socket.
+    ///
+    /// Currently, pipelining is not implemented.
+    ///
+    /// When the shutdown signal is received, the connection is processed until
+    /// it reaches a safe state, at which point it is terminated.
     #[instrument(skip(self))]
     async fn run(&mut self) -> crate::Result<()> {
+        // As long as the shutdown signal has not been received, try to read a
+        // new request frame.
         while !self.shutdown.is_shutdown() {
+            // While reading a request frame, also listen for the shutdown
+            // signal.
             let maybe_frame = tokio::select! {
                 res = self.connection.read_frame() => res?,
                 _ = self.shutdown.recv() => {
+                    // If a shutdown signal is received, break from our handler
+                    // loop. This will result in the task terminating.
                     break;
                 }
             };
 
+            // If `None` is returned from `read_frame()` then the peer closed
+            // the socket. There is no further work to do and the task can be
+            // terminated.
             let frame = match maybe_frame {
                 Some(frame) => frame,
                 None => return Ok(()),
             };
 
+            // Convert the redis frame into a command struct. This returns an
+            // error if the frame is not a valid redis command or it is an
+            // unsupported command.
             let cmd = Command::from_frame(frame)?;
 
             debug!(?cmd);
 
+            // Perform the work needed to apply the command. This may mutate the
+            // ddatabase state as a result.
+            //
+            // The connection is passed into the apply function which allows the
+            // command to write response frames directly to the connection. In
+            // the case of pub/sub, multiple frames may be send back to the
+            // peer.
             cmd.apply(&self.db, &mut self.connection, &mut self.shutdown)
                 .await?;
         }
