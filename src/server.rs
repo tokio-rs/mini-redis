@@ -8,7 +8,7 @@ use crate::{Command, Connection, Db, Shutdown};
 use std::future::Future;
 use std::sync::Arc;
 use tokio::net::{TcpListener, TcpStream};
-use tokio::sync::{broadcast, Semaphore};
+use tokio::sync::{broadcast, mpsc, Semaphore};
 use tokio::time::{self, Duration};
 use tracing::{debug, error, instrument, info};
 
@@ -47,6 +47,21 @@ struct Listener {
     /// the broadcast::Sender. Each active connection receives it, reaches a
     /// safe terminal state, and completes the task.
     notify_shutdown: broadcast::Sender<()>,
+
+    /// Used as part of the graceful shutdown process to wait for client
+    /// connections to complete processing.
+    ///
+    /// Tokio channels are closed once all `Sender` handles go out of scope.
+    /// When a channel is closed, the receiver receives `None`. This is
+    /// leveraged to detect all connection handlers completing. When a
+    /// connection handler is initialized, it is assigned a clone of
+    /// `shutdown_complete_tx`. When the listener shuts down, it drops the
+    /// sender held by this `shutdown_complete_tx` field. Once all handler tasks
+    /// complete, all clones of the `Sender` are also dropped. This results in
+    /// `shutdown_complete_rx.recv()` completing with `None`. At this point, it
+    /// is safe to exit the server process.
+    shutdown_complete_rx: mpsc::Receiver<()>,
+    shutdown_complete_tx: mpsc::Sender<()>,
 }
 
 /// Per-connection handler. Reads requests from `connection` and applies the
@@ -86,6 +101,9 @@ struct Handler {
     /// processed for the peer is continued until it reaches a safe state, at
     /// which point the connction is terminated.
     shutdown: Shutdown,
+
+    /// Not used directly. Instead, when `Handler` is dropped...?
+    _shutdown_complete: mpsc::Sender<()>,
 }
 
 /// Maximum number of concurrent connections the redis server will accept.
@@ -115,6 +133,7 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) -> crate::Result<
     // A broadcast channel is used to signal shutdown to each of the active
     // connections. When the provided `shutdown` future completes
     let (notify_shutdown, _) = broadcast::channel(1);
+    let (shutdown_complete_tx, shutdown_complete_rx) = mpsc::channel(0);
 
     // Initialize the listener state
     let mut server = Listener {
@@ -122,6 +141,8 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) -> crate::Result<
         db: Db::new(),
         limit_connections: Arc::new(Semaphore::new(MAX_CONNECTIONS)),
         notify_shutdown,
+        shutdown_complete_tx,
+        shutdown_complete_rx,
     };
 
     // Concurrently run the server and listen for the `shutdown` signal. The
@@ -160,6 +181,17 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) -> crate::Result<
             info!("shutting down");
         }
     }
+
+    // Extract the `shutdown_complete` receiver. It is important that the
+    // `shutdown_receiver` `Sender` held by `Listener` is dropped. Otherwise,
+    // the channel will never close.
+    let Listener { mut shutdown_complete_rx, .. } = server;
+
+    // Wait for all active connections to finish processing. As the `Sender`
+    // handle held by the listener has been dropped above, the only remaining
+    // `Sender` instances are held by connection handler tasks. When those drop,
+    // the `mpsc` channel will close and `recv()` will return `None`.
+    let _ = shutdown_complete_rx.recv().await;
 
     Ok(())
 }
@@ -217,6 +249,10 @@ impl Listener {
 
                 // Receive shutdown notifcations.
                 shutdown: Shutdown::new(self.notify_shutdown.subscribe()),
+
+                // Notifies the receiver half once all clones are
+                // dropped.
+                _shutdown_complete: self.shutdown_complete_tx.clone(),
             };
 
             // Spawn a new task to process the connections. Tokio tasks are like
