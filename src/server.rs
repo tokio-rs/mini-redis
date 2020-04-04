@@ -95,7 +95,12 @@ struct Handler {
 ///
 /// A real application will want to make this value configurable, but for this
 /// example, it is hard coded.
-const MAX_CONNECTIONS: usize = 10_000;
+///
+/// This is also set to a pretty low value to discourage using this in
+/// production (you'd think that all the disclaimers would make it obvious that
+/// this is not a serious project... but I thought that about mini-http as
+/// well).
+const MAX_CONNECTIONS: usize = 250;
 
 /// Run the mini-redis server.
 ///
@@ -140,8 +145,13 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) -> crate::Result<
     // https://docs.rs/tokio/*/tokio/macro.select.html
     tokio::select! {
         res = server.run() => {
+            // If an error is received here, accepting connections from the TCP
+            // listener failed multiple times and the server is giving up and
+            // shutting down.
+            //
+            // Errors encountered when handling individual connections do not
+            // bubble up to this point.
             if let Err(err) = res {
-                // TODO: gracefully handle this error
                 error!(cause = %err, "failed to accept");
             }
         }
@@ -207,22 +217,34 @@ impl Listener {
 
     /// Accept an inbound connection.
     ///
-    /// Errors are handled by backing off and retrying. Once the backoff exceeds
-    /// about 60 seconds, an error is returned.
+    /// Errors are handled by backing off and retrying. An exponential backoff
+    /// strategy is used. After the first failure, the task waits for 1 second.
+    /// After the second failure, the task waits for 2 seconds. Each subsequent
+    /// failure doubles the wait time. If accepting fails on the 6th try after
+    /// waiting for 64 seconds, then this function returns with an error.
     async fn accept(&mut self) -> crate::Result<TcpStream> {
-        let mut last_err = None;
+        let mut backoff = 1;
 
-        for i in 0..6 {
+        // Try to accept a few times
+        loop {
+            // Perform the accept operation. If a socket is successfully
+            // accepted, return it. Otherwise, save the error.
             match self.listener.accept().await {
                 Ok((socket, _)) => return Ok(socket),
-                Err(err) => last_err = Some(err),
+                Err(err) => {
+                    if backoff > 64 {
+                        // Accept has failed too many times. Return the error.
+                        return Err(err.into());
+                    }
+                }
             }
 
-            // Back off
-            time::delay_for(Duration::from_secs(1) * 2u32.pow(i)).await;
-        }
+            // Pause execution until the back off period elapses.
+            time::delay_for(Duration::from_secs(1) * backoff).await;
 
-        Err(last_err.unwrap().into())
+            // Double the back off
+            backoff *= 2;
+        }
     }
 }
 
