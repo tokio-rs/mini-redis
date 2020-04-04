@@ -57,8 +57,8 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) -> crate::Result<
     tokio::select! {
         res = server.run() => {
             if let Err(err) = res {
-                // TODO: gracefully handle this error
                 error!(cause = %err, "failed to accept");
+                return Err(err.into());
             }
         }
         _ = shutdown => {

@@ -1,5 +1,5 @@
-use crate::{Command, Connection, Db, Frame, Shutdown};
 use crate::cmd::{Parse, ParseError};
+use crate::{Command, Connection, Db, Frame, Shutdown};
 
 use bytes::Bytes;
 use tokio::select;
@@ -7,12 +7,12 @@ use tokio::stream::{StreamExt, StreamMap};
 
 #[derive(Debug)]
 pub struct Subscribe {
-    channels: Vec<String>,
+    pub(crate) channels: Vec<String>,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Unsubscribe {
-    channels: Vec<String>,
+    pub(crate) channels: Vec<String>,
 }
 
 impl Subscribe {
@@ -147,6 +147,15 @@ impl Subscribe {
             };
         }
     }
+
+    pub(crate) fn into_frame(self) -> Frame {
+        let mut frame = Frame::array();
+        frame.push_bulk(Bytes::from("subscribe".as_bytes()));
+        for channel in self.channels {
+            frame.push_bulk(Bytes::from(channel.into_bytes()));
+        }
+        frame
+    }
 }
 
 impl Unsubscribe {
@@ -165,5 +174,14 @@ impl Unsubscribe {
         }
 
         Ok(Unsubscribe { channels })
+    }
+
+    pub(crate) fn into_frame(self) -> Frame {
+        let mut frame = Frame::array();
+        frame.push_bulk(Bytes::from("unsubscribe".as_bytes()));
+        for channel in self.channels {
+            frame.push_bulk(Bytes::from(channel.into_bytes()));
+        }
+        frame
     }
 }

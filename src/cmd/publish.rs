@@ -4,8 +4,8 @@ use bytes::Bytes;
 
 #[derive(Debug)]
 pub struct Publish {
-    channel: String,
-    message: Bytes,
+    pub(crate) channel: String,
+    pub(crate) message: Bytes,
 }
 
 impl Publish {
@@ -23,5 +23,14 @@ impl Publish {
         let response = Frame::Integer(num_subscribers as u64);
         dst.write_frame(&response).await?;
         Ok(())
+    }
+
+    pub(crate) fn into_frame(self) -> Frame {
+        let mut frame = Frame::array();
+        frame.push_bulk(Bytes::from("publish".as_bytes()));
+        frame.push_bulk(Bytes::from(self.channel.into_bytes()));
+        frame.push_bulk(self.message);
+
+        frame
     }
 }
