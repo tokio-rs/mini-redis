@@ -4,6 +4,8 @@ use crate::{Connection, Frame};
 use bytes::Bytes;
 use std::future::Future;
 use std::io::{Error, ErrorKind};
+use std::iter::FromIterator;
+use std::collections::HashSet;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 use std::time::Duration;
@@ -66,11 +68,13 @@ impl Client {
     }
 
     /// subscribe to the list of channels
-    /// when client sends `SUBSCRIBE`, server's handle for client start's accepting only
-    /// `SUBSCRIBE` and `UNSUBSCRIBE` commands so we consume client and return Subscribe
+    /// when client sends a `SUBSCRIBE` command, server's handle for client enters a mode where only
+    /// `SUBSCRIBE` and `UNSUBSCRIBE` commands are allowed, so we consume client and return Subscribe type
+    /// which only allows `SUBSCRIBE` and `UNSUBSCRIBE` commands
     #[instrument(skip(self))]
     pub async fn subscribe(mut self, channels: Vec<String>) -> crate::Result<Subscriber> {
-        let subscribed_channels = self.subscribe_cmd(Subscribe { channels: channels }).await?;
+        let channels = self.subscribe_cmd(Subscribe { channels: channels }).await?;
+        let subscribed_channels = HashSet::from_iter(channels);
 
         Ok(Subscriber {
             conn: self.conn,
@@ -180,7 +184,7 @@ impl Client {
 
 pub struct Subscriber {
     conn: Connection,
-    subscribed_channels: Vec<String>,
+    subscribed_channels: HashSet<String>,
 }
 
 impl Subscriber {
@@ -236,7 +240,7 @@ impl Subscriber {
         // from all subscribed channels, so we assert that the unsubscribe list received
         // matches the client subscribed one
         if channels.is_empty() {
-            channels = self.subscribed_channels.clone();
+            channels = Vec::from_iter(self.subscribed_channels.clone());
         }
 
         // Read the response
@@ -248,8 +252,7 @@ impl Subscriber {
                         if &unsubscribe.to_string() == "unsubscribe"
                             && &uchannel.to_string() == channel =>
                     {
-                        self.subscribed_channels
-                            .retain(|channel| channel != &uchannel.to_string());
+                        self.subscribed_channels.remove(&uchannel.to_string());
                     }
                     _ => return Err(response.to_error()),
                 },

@@ -98,8 +98,8 @@ impl Subscribe {
                 res = dst.read_frame() => {
                     let frame = match res? {
                         Some(frame) => frame,
-                        // How to handle remote client closing write half
-                        None => unimplemented!(),
+                        // How to handle remote client closing write half?
+                        None => return Ok(())
                     };
 
                     // A command has been received from the client.
