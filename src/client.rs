@@ -187,6 +187,11 @@ pub struct Subscriber {
 
 impl Subscriber {
 
+    /// get the list of subscribed channels
+    pub fn get_subscribed(&self) -> &HashSet<String> {
+        &self.subscribed_channels
+    }
+
     /// await for next message published on the subscribed channels
     pub async fn next_message(&mut self) -> crate::Result<Message> {
         match self.receive_message().await {
