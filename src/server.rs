@@ -182,9 +182,9 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) -> crate::Result<
         }
     }
 
-    // Extract the `shutdown_complete` receiver. It is important that the
-    // `shutdown_receiver` `Sender` held by `Listener` is dropped. Otherwise,
-    // the channel will never close.
+    // Extract the `shutdown_complete` receiver. By not mentioning
+    // `shutdown_receiver` here, it is dropped. This is important, as the
+    // `.await` below would otherwise never complete.
     let Listener { mut shutdown_complete_rx, .. } = server;
 
     // Wait for all active connections to finish processing. As the `Sender`
@@ -229,7 +229,8 @@ impl Listener {
             self.limit_connections.acquire().await.forget();
 
             // Accept a new socket. This will attempt to perform error handling.
-            // An error returned from here is non-recoverable.
+            // The `accept` method internally attempts to recover errors, so an
+            // error here is non-recoverable.
             let socket = self.accept().await?;
 
             // Create the necessary per-connection handler state.
@@ -347,7 +348,7 @@ impl Handler {
             debug!(?cmd);
 
             // Perform the work needed to apply the command. This may mutate the
-            // ddatabase state as a result.
+            // database state as a result.
             //
             // The connection is passed into the apply function which allows the
             // command to write response frames directly to the connection. In
