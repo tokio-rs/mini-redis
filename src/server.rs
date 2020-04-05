@@ -319,9 +319,9 @@ impl Handler {
             let maybe_frame = tokio::select! {
                 res = self.connection.read_frame() => res?,
                 _ = self.shutdown.recv() => {
-                    // If a shutdown signal is received, break from our handler
-                    // loop. This will result in the task terminating.
-                    break;
+                    // If a shutdown signal is received, return from `run`.
+                    // This will result in the task terminating.
+                    return Ok(());
                 }
             };
 
