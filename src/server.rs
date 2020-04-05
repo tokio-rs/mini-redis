@@ -132,7 +132,7 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) -> crate::Result<
     // A broadcast channel is used to signal shutdown to each of the active
     // connections. When the provided `shutdown` future completes
     let (notify_shutdown, _) = broadcast::channel(1);
-    let (shutdown_complete_tx, shutdown_complete_rx) = mpsc::channel(0);
+    let (shutdown_complete_tx, shutdown_complete_rx) = mpsc::channel(1);
 
     // Initialize the listener state
     let mut server = Listener {
@@ -181,10 +181,12 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) -> crate::Result<
         }
     }
 
-    // Extract the `shutdown_complete` receiver. By not mentioning
-    // `shutdown_receiver` here, it is dropped. This is important, as the
+    // Extract the `shutdown_complete` receiver and transmitter
+    // ` explicitly drop shutdown_transmitter`. This is important, as the
     // `.await` below would otherwise never complete.
-    let Listener { mut shutdown_complete_rx, .. } = server;
+    let Listener { mut shutdown_complete_rx, shutdown_complete_tx, .. } = server;
+
+    drop(shutdown_complete_tx);
 
     // Wait for all active connections to finish processing. As the `Sender`
     // handle held by the listener has been dropped above, the only remaining
