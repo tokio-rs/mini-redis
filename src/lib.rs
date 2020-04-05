@@ -1,3 +1,5 @@
+// required because async_trait
+#![recursion_limit="256"]
 pub const DEFAULT_PORT: &str = "6379";
 
 pub mod client;

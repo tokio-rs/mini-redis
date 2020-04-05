@@ -18,7 +18,6 @@
 #![warn(rust_2018_idioms)]
 
 use mini_redis::{client, Result};
-use tokio::stream::StreamExt;
 
 #[tokio::main]
 pub async fn main() -> Result<()> {
@@ -27,12 +26,12 @@ pub async fn main() -> Result<()> {
 
 
     // subscribe to channel foo
-    let mut result = client.subscribe(vec!["foo".into()]).await?;
+    let mut subscriber = client.subscribe(vec!["foo".into()]).await?;
 
     // await messages on channel foo
-    while let Some(Ok(msg)) = result.next().await {
-        println!("got message from the channel: {}; message = {:?}", msg.channel, msg.content);
-    }
+    let msg = subscriber.next_message().await? ;
+    println!("got message from the channel: {}; message = {:?}", msg.channel, msg.content);
+
 
     Ok(())
 }

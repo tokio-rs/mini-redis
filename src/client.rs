@@ -2,16 +2,14 @@ use crate::cmd::{Get, Publish, Set, Subscribe, Unsubscribe};
 use crate::{Connection, Frame};
 
 use bytes::Bytes;
-use std::future::Future;
 use std::io::{Error, ErrorKind};
 use std::iter::FromIterator;
 use std::collections::HashSet;
-use std::pin::Pin;
-use std::task::{Context, Poll};
 use std::time::Duration;
 use tokio::net::{TcpStream, ToSocketAddrs};
 use tokio::stream::Stream;
 use tracing::{debug, instrument};
+use async_stream::stream;
 
 /// Mini asynchronous Redis client
 pub struct Client {
@@ -188,6 +186,32 @@ pub struct Subscriber {
 }
 
 impl Subscriber {
+
+    /// await for next message published on the subscribed channels
+    pub async fn next_message(&mut self) -> crate::Result<Message> {
+        match self.receive_message().await {
+            Some(message) => message,
+            None => {
+                // Receiving `None` here indicates the server has closed the
+                // connection without sending a frame. This is unexpected and is
+                // represented as a "connection reset by peer" error.
+                let err = Error::new(ErrorKind::ConnectionReset, "connection reset by server");
+
+                Err(err.into())
+            }
+        }
+    }
+
+    /// Convert the subscriber into a Stream
+    /// yielding new messages published on subscribed channels
+    pub fn into_stream(mut self) -> impl Stream<Item = crate::Result<Message>> {
+        stream! {
+            while let Some(message) = self.receive_message().await {
+                yield message;
+            }
+        }
+    }
+
     /// Subscribe to a list of new channels
     #[instrument(skip(self))]
     pub async fn subscribe(&mut self, channels: Vec<String>) -> crate::Result<()> {
@@ -263,7 +287,31 @@ impl Subscriber {
         Ok(())
     }
 
-    /// Reads a response frame from the socket. If an `Error` frame is read, it
+    /// Receives a frame published from server on socket and convert it to a `Message`
+    /// if frame is not `Frame::Array` with proper message structure return Err
+    async fn receive_message(&mut self) -> Option<crate::Result<Message>> {
+        match self.conn.read_frame().await {
+            Ok(None) => None,
+            Err(err) => Some(Err(err.into())),
+            Ok(Some(mframe)) => {
+                debug!(?mframe);
+                match mframe {
+                    Frame::Array(ref frame) => match frame.as_slice() {
+                        [message, channel, content] if &message.to_string() == "message" => {
+                            Some(Ok(Message {
+                                channel: channel.to_string(),
+                                content: Bytes::from(content.to_string()),
+                            }))
+                        }
+                        _ => Some(Err(mframe.to_error())),
+                    },
+                    frame => Some(Err(frame.to_error())),
+                }
+            }
+        }
+    }
+
+    /// Reads a response frame to a command from the socket. If an `Error` frame is read, it
     /// is converted to `Err`.
     async fn read_response(&mut self) -> crate::Result<Frame> {
         let response = self.conn.read_frame().await?;
@@ -280,34 +328,6 @@ impl Subscriber {
                 let err = Error::new(ErrorKind::ConnectionReset, "connection reset by server");
 
                 Err(err.into())
-            }
-        }
-    }
-}
-
-impl Stream for Subscriber {
-    type Item = crate::Result<Message>;
-
-    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
-        let mut read_frame = Box::pin(self.conn.read_frame());
-        match Pin::new(&mut read_frame).poll(cx) {
-            Poll::Pending => Poll::Pending,
-            Poll::Ready(Ok(None)) => Poll::Ready(None),
-            Poll::Ready(Err(err)) => Poll::Ready(Some(Err(err.into()))),
-            Poll::Ready(Ok(Some(mframe))) => {
-                debug!(?mframe);
-                match mframe {
-                    Frame::Array(ref frame) => match frame.as_slice() {
-                        [message, channel, content] if &message.to_string() == "message" => {
-                            Poll::Ready(Some(Ok(Message {
-                                channel: channel.to_string(),
-                                content: Bytes::from(content.to_string()),
-                            })))
-                        }
-                        _ => Poll::Ready(Some(Err(mframe.to_error()))),
-                    },
-                    frame => Poll::Ready(Some(Err(frame.to_error()))),
-                }
             }
         }
     }
