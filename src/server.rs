@@ -341,6 +341,15 @@ impl Handler {
             // unsupported command.
             let cmd = Command::from_frame(frame)?;
 
+            // Logs the `cmd` object. The syntax here is a shorthand provided by
+            // the `tracing` crate. It can be thought of as similar to:
+            //
+            // ```
+            // debug!(cmd = format!("{:?}", cmd));
+            // ```
+            //
+            // `tracing` provides structured logging, so information is "logged"
+            // as key-value pairs.
             debug!(?cmd);
 
             // Perform the work needed to apply the command. This may mutate the
