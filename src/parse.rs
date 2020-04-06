@@ -13,7 +13,6 @@ pub(crate) struct Parse {
 pub(crate) enum ParseError {
     EndOfStream,
     Invalid,
-    UnknownCommand(String),
 }
 
 impl Parse {
@@ -85,7 +84,6 @@ impl fmt::Display for ParseError {
         let msg = match self {
             ParseError::EndOfStream => "end of stream".to_string(),
             ParseError::Invalid => "invalid".to_string(),
-            ParseError::UnknownCommand(cmd) => format!("unknown command `{}`", cmd),
         };
         write!(f, "{}", &msg)
     }
