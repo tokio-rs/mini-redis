@@ -1,4 +1,4 @@
-use crate::cmd::{Parse, ParseError};
+use crate::cmd::{Parse, ParseError, Unknown};
 use crate::{Command, Connection, Db, Frame, Shutdown};
 
 use bytes::Bytes;
@@ -134,9 +134,9 @@ impl Subscribe {
                                 dst.write_frame(&response).await?;
                             }
                         }
-                        _ => {
-                            // TODO: received invalid command
-                            unimplemented!();
+                        command => {
+                            let cmd = Unknown::new(command.get_name());
+                            cmd.apply(dst).await?;
                         }
                     }
                 }
