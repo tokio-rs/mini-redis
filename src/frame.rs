@@ -21,7 +21,7 @@ pub(crate) enum Error {
     Incomplete,
 
     /// Invalid message encoding
-    Invalid,
+    Other(crate::Error),
 }
 
 impl Frame {
@@ -30,7 +30,7 @@ impl Frame {
         Frame::Array(vec![])
     }
 
-    /// Push a "bulk" frame into the array. `self` must be an Array frame
+    /// Push a "bulk" frame into the array. `self` must be an Array frame.
     ///
     /// # Panics
     ///
@@ -39,6 +39,20 @@ impl Frame {
         match self {
             Frame::Array(vec) => {
                 vec.push(Box::new(Frame::Bulk(bytes)));
+            }
+            _ => panic!("not an array frame"),
+        }
+    }
+
+    /// Push an "integer" frame into the array. `self` must be an Array frame.
+    ///
+    /// # Panics
+    ///
+    /// panics if `self` is not an array
+    pub(crate) fn push_int(&mut self, value: u64) {
+        match self {
+            Frame::Array(vec) => {
+                vec.push(Box::new(Frame::Integer(value)));
             }
             _ => panic!("not an array frame"),
         }
@@ -80,7 +94,7 @@ impl Frame {
 
                 Ok(())
             }
-            _ => Err(Error::Invalid),
+            actual => Err(format!("protocol error; invalid frame type byte `{}`", actual).into()),
         }
     }
 
@@ -114,7 +128,7 @@ impl Frame {
                     let line = get_line(src)?;
 
                     if line != b"-1" {
-                        return Err(Error::Invalid);
+                        return Err("protocol error; invalid frame format".into());
                     }
 
                     Ok(Frame::Null)
@@ -213,7 +227,7 @@ fn get_decimal(src: &mut Cursor<&[u8]>) -> Result<u64, Error> {
 
     let line = get_line(src)?;
 
-    atoi::<u64>(line).ok_or(Error::Invalid)
+    atoi::<u64>(line).ok_or_else(|| "protocol error; invalid frame format".into())
 }
 
 /// Find a line
@@ -236,15 +250,27 @@ fn get_line<'a>(src: &mut Cursor<&'a [u8]>) -> Result<&'a [u8], Error> {
     Err(Error::Incomplete)
 }
 
+impl From<String> for Error {
+    fn from(src: String) -> Error {
+        Error::Other(src.into())
+    }
+}
+
+impl From<&str> for Error {
+    fn from(src: &str) -> Error {
+        src.to_string().into()
+    }
+}
+
 impl From<FromUtf8Error> for Error {
     fn from(_src: FromUtf8Error) -> Error {
-        unimplemented!();
+        "protocol error; invalid frame format".into()
     }
 }
 
 impl From<TryFromIntError> for Error {
     fn from(_src: TryFromIntError) -> Error {
-        unimplemented!();
+        "protocol error; invalid frame format".into()
     }
 }
 
@@ -254,7 +280,7 @@ impl fmt::Display for Error {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Error::Incomplete => "stream ended early".fmt(fmt),
-            Error::Invalid => "invalid frame format".fmt(fmt),
+            Error::Other(err) => err.fmt(fmt),
         }
     }
 }

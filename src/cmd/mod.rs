@@ -22,7 +22,7 @@ pub(crate) enum Command {
 }
 
 impl Command {
-    pub(crate) fn from_frame(frame: Frame) -> Result<Command, ParseError> {
+    pub(crate) fn from_frame(frame: Frame) -> crate::Result<Command> {
         let mut parse = Parse::new(frame)?;
 
         let command_name = parse.next_string()?.to_lowercase();
@@ -33,7 +33,7 @@ impl Command {
             "set" => Command::Set(Set::parse_frames(&mut parse)?),
             "subscribe" => Command::Subscribe(Subscribe::parse_frames(&mut parse)?),
             "unsubscribe" => Command::Unsubscribe(Unsubscribe::parse_frames(&mut parse)?),
-            _ => return Err(ParseError::UnknownCommand(command_name)),
+            command => return Err(format!("protocol error; unknown command `{}`", command).into()),
         };
 
         parse.finish()?;
