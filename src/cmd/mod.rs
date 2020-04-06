@@ -10,6 +10,9 @@ pub use set::Set;
 mod subscribe;
 pub use subscribe::{Subscribe, Unsubscribe};
 
+mod unknown;
+pub use unknown::Unknown;
+
 use crate::{Connection, Db, Frame, Parse, ParseError, Shutdown};
 
 #[derive(Debug)]
@@ -19,6 +22,7 @@ pub(crate) enum Command {
     Set(Set),
     Subscribe(Subscribe),
     Unsubscribe(Unsubscribe),
+    Unknown(Unknown)
 }
 
 impl Command {
@@ -33,7 +37,10 @@ impl Command {
             "set" => Command::Set(Set::parse_frames(&mut parse)?),
             "subscribe" => Command::Subscribe(Subscribe::parse_frames(&mut parse)?),
             "unsubscribe" => Command::Unsubscribe(Unsubscribe::parse_frames(&mut parse)?),
-            command => return Err(format!("protocol error; unknown command `{}`", command).into()),
+            _ => {
+                parse.next_string()?;
+                Command::Unknown(Unknown::new(command_name))
+            },
         };
 
         parse.finish()?;
@@ -53,9 +60,21 @@ impl Command {
             Publish(cmd) => cmd.apply(db, dst).await,
             Set(cmd) => cmd.apply(db, dst).await,
             Subscribe(cmd) => cmd.apply(db, dst, shutdown).await,
+            Unknown(cmd) => cmd.apply(dst).await,
             // `Unsubscribe` cannot be applied. It may only be received from the
             // context of a `Subscribe` command.
             Unsubscribe(_) => unimplemented!(),
+        }
+    }
+
+    pub(crate) fn get_name(&self) -> &str {
+        match self {
+            Command::Get(_) => "get",
+            Command::Publish(_) => "pub",
+            Command::Set(_) => "set",
+            Command::Subscribe(_) => "subscribe",
+            Command::Unsubscribe(_) => "unsubscribe",
+            Command::Unknown(cmd) => &cmd.command_name,
         }
     }
 }

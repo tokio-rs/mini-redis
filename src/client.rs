@@ -273,16 +273,16 @@ impl Subscriber {
         }
 
         // Read the response
-        for channel in &channels {
+        for _channel in &channels {
             let response = self.read_response().await?;
             match response {
                 Frame::Array(ref frame) => match frame.as_slice() {
-                    [unsubscribe, uchannel]
-                        if &unsubscribe.to_string() == "unsubscribe"
-                            && &uchannel.to_string() == channel =>
-                    {
-                        self.subscribed_channels.remove(&uchannel.to_string());
-                    }
+                    [unsubscribe, uchannel] if &unsubscribe.to_string() == "unsubscribe" => {
+                        //unsubscribed channel should exist in the subscribed list at this point
+                        if self.subscribed_channels.remove(&uchannel.to_string()) == false {
+                            return Err(response.to_error());
+                        }
+                    },
                     _ => return Err(response.to_error()),
                 },
                 frame => return Err(frame.to_error()),

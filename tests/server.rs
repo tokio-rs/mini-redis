@@ -235,6 +235,57 @@ async fn manage_subscription() {
     assert_eq!(&b"*3\r\n$11\r\nunsubscribe\r\n$3\r\nfoo\r\n:0\r\n"[..], &response[..]);
 }
 
+// In this case we test that server Responds with an Error message if a client
+// sends an unknown command
+#[tokio::test]
+async fn send_error_unknown_command() {
+    let addr = start_server().await;
+
+    // Establish a connection to the server
+    let mut stream = TcpStream::connect(addr).await.unwrap();
+
+    // Get a key, data is missing
+    stream.write_all(b"*2\r\n$3\r\nFOO\r\n$5\r\nhello\r\n").await.unwrap();
+
+    let mut response = [0; 28];
+
+    stream.read_exact(&mut response).await.unwrap();
+
+    assert_eq!(b"-ERR unknown command \'foo\'\r\n", &response);
+}
+
+// In this case we test that server Responds with an Error message if a client
+// sends an GET or SET command after a SUBSCRIBE
+#[tokio::test]
+async fn send_error_get_set_after_subscribe() {
+    let addr = start_server().await;
+
+    let mut stream = TcpStream::connect(addr).await.unwrap();
+
+    // send SUBSCRIBE command
+    stream.write_all(b"*2\r\n$9\r\nsubscribe\r\n$5\r\nhello\r\n").await.unwrap();
+
+    let mut response = [0; 30];
+
+    stream.read_exact(&mut response).await.unwrap();
+
+    assert_eq!(b"*2\r\n$9\r\nsubscribe\r\n$5\r\nhello\r\n", &response);
+
+    stream.write_all(b"*3\r\n$3\r\nSET\r\n$5\r\nhello\r\n$5\r\nworld\r\n").await.unwrap();
+
+    let mut response = [0; 28];
+
+    stream.read_exact(&mut response).await.unwrap();
+    assert_eq!(b"-ERR unknown command \'set\'\r\n", &response);
+
+    stream.write_all(b"*2\r\n$3\r\nGET\r\n$5\r\nhello\r\n").await.unwrap();
+
+    let mut response = [0; 28];
+
+    stream.read_exact(&mut response).await.unwrap();
+    assert_eq!(b"-ERR unknown command \'get\'\r\n", &response);
+}
+
 async fn start_server() -> SocketAddr {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
