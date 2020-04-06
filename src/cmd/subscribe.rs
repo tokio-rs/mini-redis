@@ -68,6 +68,7 @@ impl Subscribe {
                 let mut response = Frame::array();
                 response.push_bulk(Bytes::from_static(b"subscribe"));
                 response.push_bulk(Bytes::copy_from_slice(channel.as_bytes()));
+                response.push_int(subscriptions.len().saturating_add(1) as u64);
 
                 // Subscribe to channel
                 let rx = db.subscribe(channel.clone());
@@ -130,6 +131,7 @@ impl Subscribe {
                                 let mut response = Frame::array();
                                 response.push_bulk(Bytes::from_static(b"unsubscribe"));
                                 response.push_bulk(Bytes::copy_from_slice(channel.as_bytes()));
+                                response.push_int(subscriptions.len() as u64);
 
                                 dst.write_frame(&response).await?;
                             }
