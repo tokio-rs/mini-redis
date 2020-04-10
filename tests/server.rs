@@ -265,11 +265,11 @@ async fn send_error_get_set_after_subscribe() {
     // send SUBSCRIBE command
     stream.write_all(b"*2\r\n$9\r\nsubscribe\r\n$5\r\nhello\r\n").await.unwrap();
 
-    let mut response = [0; 30];
+    let mut response = [0; 34];
 
     stream.read_exact(&mut response).await.unwrap();
 
-    assert_eq!(b"*2\r\n$9\r\nsubscribe\r\n$5\r\nhello\r\n", &response);
+    assert_eq!(&b"*3\r\n$9\r\nsubscribe\r\n$5\r\nhello\r\n:1\r\n"[..], &response[..]);
 
     stream.write_all(b"*3\r\n$3\r\nSET\r\n$5\r\nhello\r\n$5\r\nworld\r\n").await.unwrap();
 
