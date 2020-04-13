@@ -30,8 +30,8 @@ pub mod client;
 pub mod cmd;
 use cmd::Command;
 
-mod conn;
-use conn::Connection;
+mod connection;
+use connection::Connection;
 
 mod frame;
 use frame::Frame;
