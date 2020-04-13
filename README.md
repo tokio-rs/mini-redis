@@ -1,15 +1,140 @@
 # mini-redis
 
-`mini-redis` is a lightweight, idiomatic implementation of [Redis](https://redis.io) built with [tokio](https://tokio.rs).
+`mini-redis` is an incomplete, idiomatic implementation of a
+[Redis](https://redis.io) client and server built with
+[Tokio](https://tokio.rs).
 
-## Logging
+The intent of this project is to provide a larger example of writing a Tokio
+application.
 
-`mini-redis` uses [`tracing`](https://github.com/tokio-rs/tracing) to provide structured logs. Debug logs can be displayed by running:
+**Disclaimer** Don't even think about trying to use this in production... just
+don't.
 
-```console
+## Running
+
+The repository provides a server, client library, and some client executables
+for interacting with the server.
+
+Start the server:
+
+```
 RUST_LOG=debug cargo run --bin server
 ```
 
-Logs will appear when commands are sent to the server from a client.
+[`tracing`](https://github.com/tokio-rs/tracing) to provide structured logs.
+`debug` can be substituted with the desired [log level][level].
 
-More documentation on enabling different log levels and filtering logs can be found [here](https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html#directives).
+[level]: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html#directives
+
+Then, in a different terminal window, the various client [examples](examples)
+can be executed. For example:
+
+```
+cargo run --example hello_world
+```
+
+Additionally, a CLI client is provided to run arbitrary commands from the
+terminal. With the server running, the following works:
+
+```
+cargo run --bin cli set foo bar
+
+cargo run --bin cli get foo
+```
+
+## Supported commands
+
+`mini-redis` currently supports the following commands.
+
+* [GET](https://redis.io/commands/get)
+* [SET](https://redis.io/commands/set)
+* [PUBLISH](https://redis.io/commands/publish)
+* [SUBSCRIBE](https://redis.io/commands/subscribe)
+
+The Redis wire protocol specification can be found
+[here](https://redis.io/topics/protocol).
+
+
+## Tokio patterns
+
+The project demonstrates a number of useful patterns, including:
+
+### TCP server
+
+[`server.rs`](src/server.rs) starts a TCP server that accepts connections,
+and spawns a new task per connection. It gracefully handles `accept` errors.
+
+### Client library
+
+[`client.rs`](src/client.rs) shows how to model an asynchronous client. The
+various capabilities are exposed as `async` methods.
+
+### State shared across sockets
+
+The server maintains a [`Db`] instance that is accessible from all connected
+connections. The [`Db`] instance manages the key-value state as well as pub/sub
+capabilities.
+
+[`Db`]: src/db.rs
+
+### Framing
+
+[`connection.rs`](src/connection.rs) and [`frame.rs`](src/frame.rs) show how to
+idiomatically implement a wire protocol. The protocol is modeled using an
+intermediate representation, the `Frame` structure. `Connection` takes a
+`TcpStream` and exposes an API that sends and receives `Frame` values.
+
+### Graceful shutdown
+
+The server implements graceful shutdown. [`tokio::signal`] is used to listen for
+a SIGINT. Once the signal is received, shutdown begins. The server stops
+accepting new connections. Existing connections are notified to shutdown
+gracefully. In-flight work is completed then the connection is closed.
+
+[`tokio::signal`]: https://docs.rs/tokio/*/tokio/signal/
+
+### Concurrent connection limiting
+
+The server uses a [`Semaphore`] limits the maximum number of concurrent
+connections. Once the limit is reached, the server stops accepting new
+connections until an existing one terminates.
+
+[`Semaphore`]: https://docs.rs/tokio/*/tokio/sync/struct.Semaphore.html
+
+### Pub/Sub
+
+The server implements non-trivial pub/sub capability. The client may subscribe
+to multiple channels and update its subscription at any time. The server
+implements this using one [broadcast channel][broadcast] per channel and a
+[`StreamMap`] per connection. Clients are able to send subscription commands to
+the server to update the active subscriptions.
+
+[broadcast]: https://docs.rs/tokio/*/tokio/sync/broadcast/index.html
+[`StreamMap`]: https://docs.rs/tokio/*/tokio/stream/struct.StreamMap.html
+
+## Contributing
+
+Contributions to `mini-redis` are welcome. Keep in mind, the goal of the project
+is **not** to reach feature parity with real Redis, but to demonstrate
+asynchronous Rust patterns with Tokio.
+
+Commands or other features should only be added if doing so is useful to
+demonstrate a new pattern.
+
+Contributions should come with extensive comments targetted to new Tokio users.
+
+## FAQ
+
+#### Should I use this in production?
+
+No.
+
+## License
+
+This project is licensed under the [MIT license](LICENSE).
+
+### Contribution
+
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in `mini-redis` by you, shall be licensed as MIT, without any
+additional terms or conditions.
