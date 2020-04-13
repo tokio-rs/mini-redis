@@ -16,7 +16,7 @@ pub struct Unsubscribe {
 }
 
 impl Subscribe {
-    pub(crate) fn parse_frames(parse: &mut Parse) -> Result<Subscribe, ParseError> {
+    pub(crate) fn parse_frames(parse: &mut Parse) -> crate::Result<Subscribe> {
         use ParseError::EndOfStream;
 
         // There must be at least one channel
@@ -26,15 +26,14 @@ impl Subscribe {
             match parse.next_string() {
                 Ok(s) => channels.push(s),
                 Err(EndOfStream) => break,
-                Err(err) => return Err(err),
+                Err(err) => return Err(err.into()),
             }
         }
 
         Ok(Subscribe { channels })
     }
 
-    /// Implements the "subscribe" half of Redis' Pub/Sub feature documented
-    /// [here].
+    /// Apply the `Subscribe` command to the specified `Db` instance.
     ///
     /// This function is the entry point and includes the initial list of
     /// channels to subscribe to. Additional `subscribe` and `unsubscribe`
