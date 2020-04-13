@@ -1,6 +1,6 @@
 use mini_redis::server;
 
-use std::net::SocketAddr;
+use std::net::{SocketAddr, Shutdown};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::time::{self, Duration};
@@ -35,10 +35,16 @@ async fn key_value_get_set() {
     // Get the key, data is present
     stream.write_all(b"*2\r\n$3\r\nGET\r\n$5\r\nhello\r\n").await.unwrap();
 
+    // Shutdown the write half
+    stream.shutdown(Shutdown::Write).unwrap();
+
     // Read "world" response
     let mut response = [0; 11];
     stream.read_exact(&mut response).await.unwrap();
     assert_eq!(b"$5\r\nworld\r\n", &response);
+
+    // Receive `None`
+    assert_eq!(0, stream.read(&mut response).await.unwrap());
 }
 
 /// Similar to the basic key-value test, however, this time timeouts will be
