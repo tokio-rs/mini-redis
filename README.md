@@ -21,8 +21,8 @@ Start the server:
 RUST_LOG=debug cargo run --bin server
 ```
 
-[`tracing`](https://github.com/tokio-rs/tracing) to provide structured logs.
-`debug` can be substituted with the desired [log level][level].
+The [`tracing`](https://github.com/tokio-rs/tracing) crate is used to provide structured logs.
+You can substitute `debug` with the desired [log level][level].
 
 [level]: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html#directives
 
@@ -89,7 +89,7 @@ intermediate representation, the `Frame` structure. `Connection` takes a
 The server implements graceful shutdown. [`tokio::signal`] is used to listen for
 a SIGINT. Once the signal is received, shutdown begins. The server stops
 accepting new connections. Existing connections are notified to shutdown
-gracefully. In-flight work is completed then the connection is closed.
+gracefully. In-flight work is completed, and the connection is closed.
 
 [`tokio::signal`]: https://docs.rs/tokio/*/tokio/signal/
 
