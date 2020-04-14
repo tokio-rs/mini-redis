@@ -117,6 +117,12 @@ the server to update the active subscriptions.
 The server uses a `std::sync::Mutex` and **not** a Tokio mutex to synchronize
 access to shared state. See [`db.rs`](src/db.rs) for more details.
 
+### Testing asynchronous code that relies on time
+
+In [`tests/server.rs`](tests/server.rs), there are tests for key expiration.
+These tests depend on time passing. In order to make the tests deterministic,
+time is mocked out using Tokio's testing utilities.
+
 ## Contributing
 
 Contributions to `mini-redis` are welcome. Keep in mind, the goal of the project
@@ -127,6 +133,9 @@ Commands or other features should only be added if doing so is useful to
 demonstrate a new pattern.
 
 Contributions should come with extensive comments targetted to new Tokio users.
+
+Contributions that only focus on clarifying and improving comments are very
+welcome.
 
 ## FAQ
 

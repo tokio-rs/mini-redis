@@ -42,10 +42,10 @@ impl Set {
         }
     }
 
-    /// Parse a `Set` instance from received data.
+    /// Parse a `Set` instance from a received frame.
     ///
-    /// The `Parse` argument provides a cursor like API to read fields from a
-    /// received `Frame`. At this point, the data has already been received from
+    /// The `Parse` argument provides a cursor-like API to read fields from the
+    /// `Frame`. At this point, the entire frame has already been received from
     /// the socket.
     ///
     /// The `SET` string has already been consumed.

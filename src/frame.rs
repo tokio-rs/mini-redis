@@ -169,6 +169,16 @@ impl Frame {
     }
 }
 
+impl PartialEq<&str> for Frame {
+    fn eq(&self, other: &&str) -> bool {
+        match self {
+            Frame::Simple(s) => s.eq(other),
+            Frame::Bulk(s) => s.eq(other),
+            _ => false,
+        }
+    }
+}
+
 impl fmt::Display for Frame {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         use std::str;

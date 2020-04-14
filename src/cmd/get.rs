@@ -20,10 +20,10 @@ impl Get {
         Get { key: key.to_string() }
     }
 
-    /// Parse a `Get` instance from received data.
+    /// Parse a `Get` instance from a received frame.
     ///
-    /// The `Parse` argument provides a cursor like API to read fields from a
-    /// received `Frame`. At this point, the data has already been received from
+    /// The `Parse` argument provides a cursor-like API to read fields from the
+    /// `Frame`. At this point, the entire frame has already been received from
     /// the socket.
     ///
     /// The `GET` string has already been consumed.

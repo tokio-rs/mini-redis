@@ -63,6 +63,7 @@ async fn main() -> mini_redis::Result<()> {
     // Establish a connection
     let mut client = client::connect(&addr).await?;
 
+    // Process the requested command
     match cli.command {
         Command::Get { key } => {
             if let Some(value) = client.get(&key).await? {

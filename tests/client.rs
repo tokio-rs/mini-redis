@@ -31,7 +31,7 @@ async fn receive_message_subscribed_channel() {
         client.publish("hello", "world".into()).await.unwrap()
     });
 
-    let message = subscriber.next_message().await.unwrap();
+    let message = subscriber.next_message().await.unwrap().unwrap();
     assert_eq!("hello", &message.channel);
     assert_eq!(b"world", &message.content[..])
 }
@@ -49,7 +49,7 @@ async fn receive_message_multiple_subscribed_channels() {
         client.publish("hello", "world".into()).await.unwrap()
     });
 
-    let message1 = subscriber.next_message().await.unwrap();
+    let message1 = subscriber.next_message().await.unwrap().unwrap();
     assert_eq!("hello", &message1.channel);
     assert_eq!(b"world", &message1.content[..]);
 
@@ -59,7 +59,7 @@ async fn receive_message_multiple_subscribed_channels() {
     });
 
 
-    let message2 = subscriber.next_message().await.unwrap();
+    let message2 = subscriber.next_message().await.unwrap().unwrap();
     assert_eq!("world", &message2.channel);
     assert_eq!(b"howdy?", &message2.content[..])
 }
@@ -73,7 +73,7 @@ async fn unsubscribes_from_channels() {
     let client = client::connect(addr.clone()).await.unwrap();
     let mut subscriber = client.subscribe(vec!["hello".into(), "world".into()]).await.unwrap();
 
-    subscriber.unsubscribe(vec![]).await.unwrap();
+    subscriber.unsubscribe(&[]).await.unwrap();
     assert_eq!(subscriber.get_subscribed().len(), 0);
 }
 
