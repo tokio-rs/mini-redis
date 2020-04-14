@@ -47,12 +47,7 @@ impl Client {
     /// Set the value of a key to `value`.
     #[instrument(skip(self))]
     pub async fn set(&mut self, key: &str, value: Bytes) -> crate::Result<()> {
-        self.set_cmd(Set {
-            key: key.to_string(),
-            value: value,
-            expire: None,
-        })
-        .await
+        self.set_cmd(Set::new(key, value, None)).await
     }
 
     /// publish `message` on the `channel`
@@ -88,12 +83,7 @@ impl Client {
         value: Bytes,
         expiration: Duration,
     ) -> crate::Result<()> {
-        self.set_cmd(Set {
-            key: key.to_string(),
-            value: value.into(),
-            expire: Some(expiration),
-        })
-        .await
+        self.set_cmd(Set::new(key, value, Some(expiration))).await
     }
 
     async fn set_cmd(&mut self, cmd: Set) -> crate::Result<()> {

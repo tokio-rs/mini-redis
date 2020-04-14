@@ -112,6 +112,11 @@ the server to update the active subscriptions.
 [broadcast]: https://docs.rs/tokio/*/tokio/sync/broadcast/index.html
 [`StreamMap`]: https://docs.rs/tokio/*/tokio/stream/struct.StreamMap.html
 
+### Using a `std::sync::Mutex` in an async application
+
+The server uses a `std::sync::Mutex` and **not** a Tokio mutex to synchronize
+access to shared state. See [`db.rs`](src/db.rs) for more details.
+
 ## Contributing
 
 Contributions to `mini-redis` are welcome. Keep in mind, the goal of the project

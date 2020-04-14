@@ -1,4 +1,4 @@
-use crate::{Connection, Db, Frame, Parse, ParseError};
+use crate::{Connection, Db, Frame, Parse};
 
 use bytes::Bytes;
 
@@ -9,13 +9,17 @@ pub struct Publish {
 }
 
 impl Publish {
-    pub(crate) fn parse_frames(parse: &mut Parse) -> Result<Publish, ParseError> {
+    pub(crate) fn parse_frames(parse: &mut Parse) -> crate::Result<Publish> {
         let channel = parse.next_string()?;
         let message = parse.next_bytes()?;
 
         Ok(Publish { channel, message })
     }
 
+    /// Apply the `Publish` command to the specified `Db` instance.
+    ///
+    /// The response is written to `dst`. This is called by the server in order
+    /// to execute a received command.
     pub(crate) async fn apply(self, db: &Db, dst: &mut Connection) -> crate::Result<()> {
         // Set the value
         let num_subscribers = db.publish(&self.channel, self.message);
