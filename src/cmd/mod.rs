@@ -110,7 +110,7 @@ impl Command {
             Command::Set(_) => "set",
             Command::Subscribe(_) => "subscribe",
             Command::Unsubscribe(_) => "unsubscribe",
-            Command::Unknown(cmd) => &cmd.command_name,
+            Command::Unknown(cmd) => cmd.get_name(),
         }
     }
 }

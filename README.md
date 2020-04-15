@@ -10,6 +10,20 @@ application.
 **Disclaimer** Don't even think about trying to use this in production... just
 don't.
 
+## Why Redis
+
+The primary goal of this project is teaching Tokio. Doing this requires a
+project with a wide range of features with a focus on implementation simplicity.
+Redis, an in-memory database, provides a wide range of features and uses a
+simple wire protocol. The wide range of features allows demonstrating many Tokio
+patterns in a "real world" context.
+
+The Redis wire protocol documentation can be found [here](https://redis.io/topics/protocol).
+
+The set of commands Redis provides can be found
+[here](https://redis.io/commands).
+
+
 ## Running
 
 The repository provides a server, client library, and some client executables
@@ -117,6 +131,12 @@ the server to update the active subscriptions.
 The server uses a `std::sync::Mutex` and **not** a Tokio mutex to synchronize
 access to shared state. See [`db.rs`](src/db.rs) for more details.
 
+### Testing asynchronous code that relies on time
+
+In [`tests/server.rs`](tests/server.rs), there are tests for key expiration.
+These tests depend on time passing. In order to make the tests deterministic,
+time is mocked out using Tokio's testing utilities.
+
 ## Contributing
 
 Contributions to `mini-redis` are welcome. Keep in mind, the goal of the project
@@ -127,6 +147,9 @@ Commands or other features should only be added if doing so is useful to
 demonstrate a new pattern.
 
 Contributions should come with extensive comments targetted to new Tokio users.
+
+Contributions that only focus on clarifying and improving comments are very
+welcome.
 
 ## FAQ
 

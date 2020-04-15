@@ -29,9 +29,9 @@ pub async fn main() -> Result<()> {
     let mut subscriber = client.subscribe(vec!["foo".into()]).await?;
 
     // await messages on channel foo
-    let msg = subscriber.next_message().await? ;
-    println!("got message from the channel: {}; message = {:?}", msg.channel, msg.content);
-
+    if let Some(msg) = subscriber.next_message().await? {
+        println!("got message from the channel: {}; message = {:?}", msg.channel, msg.content);
+    }
 
     Ok(())
 }
