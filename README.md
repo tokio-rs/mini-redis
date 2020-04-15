@@ -10,6 +10,20 @@ application.
 **Disclaimer** Don't even think about trying to use this in production... just
 don't.
 
+## Why Redis
+
+The primary goal of this project is teaching Tokio. Doing this requires a
+project with a wide range of features with a focus on implementation simplicity.
+Redis, an in-memory database, provides a wide range of features and uses a
+simple wire protocol. The wide gamut of features allows demonstrating many Tokio
+patterns in a "real world" context.
+
+The Redis wire protocol documentation can be found [here](https://redis.io/topics/protocol).
+
+The set of commands Redis provides can be found
+[here](https://redis.io/commands).
+
+
 ## Running
 
 The repository provides a server, client library, and some client executables
