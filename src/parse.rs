@@ -79,7 +79,7 @@ impl Parse {
         match self.next()? {
             // Both `Simple` and `Bulk` representation may be raw bytes.
             //
-            // While errors are stored as strings and could be represented as
+            // Although errors are stored as strings and could be represented as
             // raw bytes, they are considered separate types.
             Frame::Simple(s) => Ok(Bytes::from(s.into_bytes())),
             Frame::Bulk(data) => Ok(data),

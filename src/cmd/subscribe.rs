@@ -7,7 +7,7 @@ use tokio::stream::{StreamExt, StreamMap};
 
 /// Subscribes the client to one or more channels.
 ///
-/// Once the client enters the subscribed state it is not supposed to issue any
+/// Once the client enters the subscribed state, it is not supposed to issue any
 /// other commands, except for additional SUBSCRIBE, PSUBSCRIBE, UNSUBSCRIBE,
 /// PUNSUBSCRIBE, PING and QUIT commands.
 #[derive(Debug)]
@@ -248,7 +248,7 @@ impl Unsubscribe {
     pub(crate) fn parse_frames(parse: &mut Parse) -> Result<Unsubscribe, ParseError> {
         use ParseError::EndOfStream;
 
-        // There may be no channels listed, start with an empty vec.
+        // There may be no channels listed, so start with an empty vec.
         let mut channels = vec![];
 
         // Each entry in the frame must be a string or the frame is malformed.
