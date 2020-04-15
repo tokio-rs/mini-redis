@@ -18,8 +18,7 @@ pub struct Subscribe {
 /// Unsubscribes the client from one or more channels.
 ///
 /// When no channels are specified, the client is unsubscribed from all the
-/// previously subscribed channels. In this case, a message for every
-/// unsubscribed channel will be sent to the client.
+/// previously subscribed channels.
 #[derive(Clone, Debug)]
 pub struct Unsubscribe {
     channels: Vec<String>,

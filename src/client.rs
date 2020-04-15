@@ -165,8 +165,10 @@ impl Client {
 
     /// Set `key` to hold the given `value`. The value expires after `expiration`
     ///
-    /// The `value` is associated with `key` until it expires, is overwritten by
-    /// the next call to `set`, or is removed.
+    /// The `value` is associated with `key` until one of the following:
+    /// - it expires.
+    /// - it is overwritten by the next call to `set`.
+    /// - it is removed.
     ///
     /// If key already holds a value, it is overwritten. Any previous time to
     /// live associated with the key is discarded on a successful SET operation.
