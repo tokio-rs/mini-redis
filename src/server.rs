@@ -10,7 +10,7 @@ use std::sync::Arc;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::{broadcast, mpsc, Semaphore};
 use tokio::time::{self, Duration};
-use tracing::{debug, error, instrument, info};
+use tracing::{debug, error, info, instrument};
 
 /// Server listener state. Created in the `run` call. It includes a `run` method
 /// which performs the TCP listening and initialization of per-connection state.
@@ -184,7 +184,11 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) -> crate::Result<
     // Extract the `shutdown_complete` receiver and transmitter
     // explicitly drop `shutdown_transmitter`. This is important, as the
     // `.await` below would otherwise never complete.
-    let Listener { mut shutdown_complete_rx, shutdown_complete_tx, .. } = server;
+    let Listener {
+        mut shutdown_complete_rx,
+        shutdown_complete_tx,
+        ..
+    } = server;
 
     drop(shutdown_complete_tx);
 

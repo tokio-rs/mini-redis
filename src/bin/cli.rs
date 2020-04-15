@@ -24,7 +24,7 @@ enum Command {
     /// Get the value of key.
     Get {
         /// Name of key to get
-        key: String
+        key: String,
     },
     /// Set key to hold the string value.
     Set {
@@ -76,11 +76,19 @@ async fn main() -> mini_redis::Result<()> {
                 println!("(nil)");
             }
         }
-        Command::Set { key, value, expires: None } => {
+        Command::Set {
+            key,
+            value,
+            expires: None,
+        } => {
             client.set(&key, value).await?;
             println!("OK");
         }
-        Command::Set { key, value, expires: Some(expires) } => {
+        Command::Set {
+            key,
+            value,
+            expires: Some(expires),
+        } => {
             client.set_expires(&key, value, expires).await?;
             println!("OK");
         }
