@@ -169,7 +169,7 @@ impl Client {
     /// the next call to `set`, or is removed.
     ///
     /// If key already holds a value, it is overwritten. Any previous time to
-    /// live associated with the key is discarded on successful SET operation.
+    /// live associated with the key is discarded on a successful SET operation.
     ///
     /// # Examples
     ///
