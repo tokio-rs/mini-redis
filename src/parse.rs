@@ -67,7 +67,11 @@ impl Parse {
             Frame::Bulk(data) => str::from_utf8(&data[..])
                 .map(|s| s.to_string())
                 .map_err(|_| "protocol error; invalid string".into()),
-            frame => Err(format!("protocol error; expected simple frame or bulk frame, got {:?}", frame).into()),
+            frame => Err(format!(
+                "protocol error; expected simple frame or bulk frame, got {:?}",
+                frame
+            )
+            .into()),
         }
     }
 
@@ -83,7 +87,11 @@ impl Parse {
             // raw bytes, they are considered separate types.
             Frame::Simple(s) => Ok(Bytes::from(s.into_bytes())),
             Frame::Bulk(data) => Ok(data),
-            frame => Err(format!("protocol error; expected simple frame or bulk frame, got {:?}", frame).into()),
+            frame => Err(format!(
+                "protocol error; expected simple frame or bulk frame, got {:?}",
+                frame
+            )
+            .into()),
         }
     }
 
@@ -135,13 +143,10 @@ impl From<&str> for ParseError {
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ParseError::EndOfStream => {
-                "protocol error; unexpected end of stream".fmt(f)
-            }
+            ParseError::EndOfStream => "protocol error; unexpected end of stream".fmt(f),
             ParseError::Other(err) => err.fmt(f),
         }
     }
 }
 
-impl std::error::Error for ParseError {
-}
+impl std::error::Error for ParseError {}

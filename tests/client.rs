@@ -1,7 +1,7 @@
+use mini_redis::{client, server};
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 use tokio::task::JoinHandle;
-use mini_redis::{client, server};
 
 /// A basic "hello world" style test. A server instance is started in a
 /// background task. A client instance is then established and set and get
@@ -42,7 +42,10 @@ async fn receive_message_multiple_subscribed_channels() {
     let (addr, _) = start_server().await;
 
     let client = client::connect(addr.clone()).await.unwrap();
-    let mut subscriber = client.subscribe(vec!["hello".into(), "world".into()]).await.unwrap();
+    let mut subscriber = client
+        .subscribe(vec!["hello".into(), "world".into()])
+        .await
+        .unwrap();
 
     tokio::spawn(async move {
         let mut client = client::connect(addr).await.unwrap();
@@ -58,7 +61,6 @@ async fn receive_message_multiple_subscribed_channels() {
         client.publish("world", "howdy?".into()).await.unwrap()
     });
 
-
     let message2 = subscriber.next_message().await.unwrap().unwrap();
     assert_eq!("world", &message2.channel);
     assert_eq!(b"howdy?", &message2.content[..])
@@ -71,7 +73,10 @@ async fn unsubscribes_from_channels() {
     let (addr, _) = start_server().await;
 
     let client = client::connect(addr.clone()).await.unwrap();
-    let mut subscriber = client.subscribe(vec!["hello".into(), "world".into()]).await.unwrap();
+    let mut subscriber = client
+        .subscribe(vec!["hello".into(), "world".into()])
+        .await
+        .unwrap();
 
     subscriber.unsubscribe(&[]).await.unwrap();
     assert_eq!(subscriber.get_subscribed().len(), 0);
@@ -81,10 +86,7 @@ async fn start_server() -> (SocketAddr, JoinHandle<mini_redis::Result<()>>) {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
 
-    let handle = tokio::spawn(async move {
-        server::run(listener, tokio::signal::ctrl_c()).await
-    });
+    let handle = tokio::spawn(async move { server::run(listener, tokio::signal::ctrl_c()).await });
 
     (addr, handle)
 }
-

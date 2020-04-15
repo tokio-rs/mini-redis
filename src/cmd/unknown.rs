@@ -12,7 +12,9 @@ impl Unknown {
     /// Create a new `Unknown` command which responds to unknown commands
     /// issued by clients
     pub(crate) fn new(key: impl ToString) -> Unknown {
-        Unknown { command_name: key.to_string() }
+        Unknown {
+            command_name: key.to_string(),
+        }
     }
 
     /// Returns the command name

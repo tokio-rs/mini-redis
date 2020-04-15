@@ -27,7 +27,9 @@ pub struct Unsubscribe {
 impl Subscribe {
     /// Creates a new `Subscribe` command to listen on the specified channels.
     pub(crate) fn new(channels: &[String]) -> Subscribe {
-        Subscribe { channels: channels.to_vec() }
+        Subscribe {
+            channels: channels.to_vec(),
+        }
     }
 
     /// Parse a `Subscribe` instance from a received frame.
@@ -221,7 +223,9 @@ impl Subscribe {
 impl Unsubscribe {
     /// Create a new `Unsubscribe` command with the given `channels`.
     pub(crate) fn new(channels: &[String]) -> Unsubscribe {
-        Unsubscribe { channels: channels.to_vec() }
+        Unsubscribe {
+            channels: channels.to_vec(),
+        }
     }
 
     /// Parse a `Unsubscribe` instance from a received frame.

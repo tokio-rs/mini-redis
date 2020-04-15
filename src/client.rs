@@ -5,13 +5,13 @@
 use crate::cmd::{Get, Publish, Set, Subscribe, Unsubscribe};
 use crate::{Connection, Frame};
 
+use async_stream::try_stream;
 use bytes::Bytes;
 use std::io::{Error, ErrorKind};
 use std::time::Duration;
 use tokio::net::{TcpStream, ToSocketAddrs};
 use tokio::stream::Stream;
 use tracing::{debug, instrument};
-use async_stream::try_stream;
 
 /// Established connection with a Redis server.
 ///
@@ -416,7 +416,8 @@ impl Subscriber {
         self.client.subscribe_cmd(channels).await?;
 
         // Update the set of subscribed channels.
-        self.subscribed_channels.extend(channels.iter().map(Clone::clone));
+        self.subscribed_channels
+            .extend(channels.iter().map(Clone::clone));
 
         Ok(())
     }
@@ -462,7 +463,7 @@ impl Subscriber {
                         if self.subscribed_channels.len() != len - 1 {
                             return Err(response.to_error());
                         }
-                    },
+                    }
                     _ => return Err(response.to_error()),
                 },
                 frame => return Err(frame.to_error()),

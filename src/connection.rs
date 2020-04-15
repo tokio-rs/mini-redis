@@ -54,7 +54,7 @@ impl Connection {
     /// # Returns
     ///
     /// On success, the received frame is returned. If the `TcpStream`
-    /// is closed in a way that doesn't break a frame in half, it retuns 
+    /// is closed in a way that doesn't break a frame in half, it retuns
     /// `None`. Otherwise, an error is returned.
     pub(crate) async fn read_frame(&mut self) -> crate::Result<Option<Frame>> {
         use frame::Error::Incomplete;

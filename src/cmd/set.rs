@@ -1,5 +1,5 @@
-use crate::{Connection, Db, Frame};
 use crate::cmd::{Parse, ParseError};
+use crate::{Connection, Db, Frame};
 
 use bytes::Bytes;
 use std::time::Duration;

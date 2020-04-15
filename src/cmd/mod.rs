@@ -25,7 +25,7 @@ pub(crate) enum Command {
     Set(Set),
     Subscribe(Subscribe),
     Unsubscribe(Unsubscribe),
-    Unknown(Unknown)
+    Unknown(Unknown),
 }
 
 impl Command {
@@ -66,7 +66,7 @@ impl Command {
                 // the command is not recognized, there is most likely
                 // unconsumed fields remaining in the `Parse` instance.
                 return Ok(Command::Unknown(Unknown::new(command_name)));
-            },
+            }
         };
 
         // Check if there is any remaining unconsumed fields in the `Parse`

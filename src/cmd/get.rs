@@ -17,7 +17,9 @@ pub struct Get {
 impl Get {
     /// Create a new `Get` command which fetches `key`.
     pub(crate) fn new(key: impl ToString) -> Get {
-        Get { key: key.to_string() }
+        Get {
+            key: key.to_string(),
+        }
     }
 
     /// Parse a `Get` instance from a received frame.
