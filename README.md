@@ -68,6 +68,7 @@ cargo run --bin cli get foo
 The Redis wire protocol specification can be found
 [here](https://redis.io/topics/protocol).
 
+There is no support for persistence yet.
 
 ## Tokio patterns
 
