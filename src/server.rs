@@ -187,10 +187,12 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) -> crate::Result<
     let Listener {
         mut shutdown_complete_rx,
         shutdown_complete_tx,
+        notify_shutdown,
         ..
     } = server;
 
     drop(shutdown_complete_tx);
+    drop(notify_shutdown);
 
     // Wait for all active connections to finish processing. As the `Sender`
     // handle held by the listener has been dropped above, the only remaining
