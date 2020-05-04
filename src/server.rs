@@ -192,6 +192,7 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) -> crate::Result<
     } = server;
 
     drop(shutdown_complete_tx);
+    // drop `notify_shutdown`, so that the `Handler` can get shutdown notify to close the clients socket.
     drop(notify_shutdown);
 
     // Wait for all active connections to finish processing. As the `Sender`
