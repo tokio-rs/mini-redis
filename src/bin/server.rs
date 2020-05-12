@@ -8,7 +8,7 @@
 
 use mini_redis::{server, DEFAULT_PORT};
 
-use clap::Clap;
+use structopt::StructOpt;
 use tokio::net::TcpListener;
 use tokio::signal;
 
@@ -18,7 +18,7 @@ pub async fn main() -> mini_redis::Result<()> {
     // see https://docs.rs/tracing for more info
     tracing_subscriber::fmt::try_init()?;
 
-    let cli = Cli::parse();
+    let cli = Cli::from_args();
     let port = cli.port.unwrap_or(DEFAULT_PORT.to_string());
 
     // Bind a TCP listener
@@ -27,9 +27,9 @@ pub async fn main() -> mini_redis::Result<()> {
     server::run(listener, signal::ctrl_c()).await
 }
 
-#[derive(Clap, Debug)]
-#[clap(name = "mini-redis-server", version = env!("CARGO_PKG_VERSION"), author = env!("CARGO_PKG_AUTHORS"), about = "A Redis server")]
+#[derive(StructOpt, Debug)]
+#[structopt(name = "mini-redis-server", version = env!("CARGO_PKG_VERSION"), author = env!("CARGO_PKG_AUTHORS"), about = "A Redis server")]
 struct Cli {
-    #[clap(name = "port", long = "--port")]
+    #[structopt(name = "port", long = "--port")]
     port: Option<String>,
 }

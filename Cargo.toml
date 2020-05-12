@@ -5,14 +5,14 @@ name = "mini-redis"
 version = "0.1.0"
 
 [dependencies]
+async-stream = "0.2.1"
 atoi = "0.3.2"
 bytes = "0.5.4"
-clap = { git = "https://github.com/clap-rs/clap/" }
+structopt = "0.3.14"
 tokio = { version = "0.2.20", features = ["full"] }
 tracing = "0.1.13"
 tracing-futures = { version = "0.2.3", features = ["tokio"] }
 tracing-subscriber = "0.2.2"
-async-stream = "0.2.1"
 
 [dev-dependencies]
 # Enable test-utilities in dev mode only. This is mostly for tests.

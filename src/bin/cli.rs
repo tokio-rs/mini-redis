@@ -1,25 +1,25 @@
 use mini_redis::{client, DEFAULT_PORT};
 
 use bytes::Bytes;
-use clap::Clap;
 use std::num::ParseIntError;
 use std::str;
 use std::time::Duration;
+use structopt::StructOpt;
 
-#[derive(Clap, Debug)]
-#[clap(name = "mini-redis-cli", version = env!("CARGO_PKG_VERSION"), author = env!("CARGO_PKG_AUTHORS"), about = "Issue Redis commands")]
+#[derive(StructOpt, Debug)]
+#[structopt(name = "mini-redis-cli", version = env!("CARGO_PKG_VERSION"), author = env!("CARGO_PKG_AUTHORS"), about = "Issue Redis commands")]
 struct Cli {
-    #[clap(subcommand)]
+    #[structopt(subcommand)]
     command: Command,
 
-    #[clap(name = "hostname", long = "--host", default_value = "127.0.0.1")]
+    #[structopt(name = "hostname", long = "--host", default_value = "127.0.0.1")]
     host: String,
 
-    #[clap(name = "port", long = "--port", default_value = DEFAULT_PORT)]
+    #[structopt(name = "port", long = "--port", default_value = DEFAULT_PORT)]
     port: String,
 }
 
-#[derive(Clap, Debug)]
+#[derive(StructOpt, Debug)]
 enum Command {
     /// Get the value of key.
     Get {
@@ -32,11 +32,11 @@ enum Command {
         key: String,
 
         /// Value to set.
-        #[clap(parse(from_str = bytes_from_str))]
+        #[structopt(parse(from_str = bytes_from_str))]
         value: Bytes,
 
         /// Expire the value after specified amount of time
-        #[clap(parse(try_from_str = duration_from_ms_str))]
+        #[structopt(parse(try_from_str = duration_from_ms_str))]
         expires: Option<Duration>,
     },
 }
@@ -55,7 +55,7 @@ async fn main() -> mini_redis::Result<()> {
     tracing_subscriber::fmt::try_init()?;
 
     // Parse command line arguments
-    let cli = Cli::parse();
+    let cli = Cli::from_args();
 
     // Get the remote address to connect to
     let addr = format!("{}:{}", cli.host, cli.port);
