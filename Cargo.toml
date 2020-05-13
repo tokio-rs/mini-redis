@@ -3,6 +3,14 @@ authors = ["Carl Lerche <me@carllerche.com>"]
 edition = "2018"
 name = "mini-redis"
 version = "0.1.0"
+license = "MIT"
+readme = "README.md"
+documentation = "https://docs.rs/mini-redis/0.1.0/mini-redis/"
+repository = "https://github.com/tokio-rs/mini-redis"
+description = """
+An incomplete implementation of a Rust client and server. Used as a
+larger example of an idiomatic Tokio application.
+"""
 
 [dependencies]
 async-stream = "0.2.1"
