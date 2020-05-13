@@ -12,6 +12,15 @@ An incomplete implementation of a Rust client and server. Used as a
 larger example of an idiomatic Tokio application.
 """
 
+[[bin]]
+name = "mini-redis-cli"
+path = "src/bin/cli.rs"
+
+[[bin]]
+name = "mini-redis-server"
+path = "src/bin/server.rs"
+
+
 [dependencies]
 async-stream = "0.2.1"
 atoi = "0.3.2"
