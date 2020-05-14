@@ -20,7 +20,6 @@ path = "src/bin/cli.rs"
 name = "mini-redis-server"
 path = "src/bin/server.rs"
 
-
 [dependencies]
 async-stream = "0.2.1"
 atoi = "0.3.2"
