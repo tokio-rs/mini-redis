@@ -17,7 +17,7 @@ async-stream = "0.2.1"
 atoi = "0.3.2"
 bytes = "0.5.4"
 structopt = "0.3.14"
-tokio = { version = "0.2.20", features = ["full"] }
+tokio = { version = "0.2.21", features = ["full"] }
 tracing = "0.1.13"
 tracing-futures = { version = "0.2.3" }
 tracing-subscriber = "0.2.2"
