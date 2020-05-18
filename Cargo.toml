@@ -13,11 +13,11 @@ larger example of an idiomatic Tokio application.
 """
 
 [[bin]]
-name = "mini-redis-cli"
+name = "cli"
 path = "src/bin/cli.rs"
 
 [[bin]]
-name = "mini-redis-server"
+name = "server"
 path = "src/bin/server.rs"
 
 [dependencies]
