@@ -225,7 +225,7 @@ impl Listener {
             //
             // `acquire` returns a permit that is bound via a lifetime to the
             // semaphore. When the permit value is dropped, it is automatically
-            // returned to the sempahore. This is convenient in many cases.
+            // returned to the semaphore. This is convenient in many cases.
             // However, in this case, the permit must be returned in a different
             // task than it is acquired in (the handler task). To do this, we
             // "forget" the permit, which drops the permit value **without**
@@ -253,7 +253,7 @@ impl Listener {
                 // connection, a permit is added back to the semaphore.
                 limit_connections: self.limit_connections.clone(),
 
-                // Receive shutdown notifcations.
+                // Receive shutdown notifications.
                 shutdown: Shutdown::new(self.notify_shutdown.subscribe()),
 
                 // Notifies the receiver half once all clones are
