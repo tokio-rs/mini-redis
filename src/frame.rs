@@ -12,7 +12,7 @@ pub(crate) enum Frame {
     Integer(u64),
     Bulk(Bytes),
     Null,
-    Array(Vec<Box<Frame>>),
+    Array(Vec<Frame>),
 }
 
 #[derive(Debug)]
@@ -38,7 +38,7 @@ impl Frame {
     pub(crate) fn push_bulk(&mut self, bytes: Bytes) {
         match self {
             Frame::Array(vec) => {
-                vec.push(Box::new(Frame::Bulk(bytes)));
+                vec.push(Frame::Bulk(bytes));
             }
             _ => panic!("not an array frame"),
         }
@@ -52,7 +52,7 @@ impl Frame {
     pub(crate) fn push_int(&mut self, value: u64) {
         match self {
             Frame::Array(vec) => {
-                vec.push(Box::new(Frame::Integer(value)));
+                vec.push(Frame::Integer(value));
             }
             _ => panic!("not an array frame"),
         }
@@ -154,7 +154,7 @@ impl Frame {
                 let mut out = Vec::with_capacity(len);
 
                 for _ in 0..len {
-                    out.push(Box::new(Frame::parse(src)?));
+                    out.push(Frame::parse(src)?);
                 }
 
                 Ok(Frame::Array(out))

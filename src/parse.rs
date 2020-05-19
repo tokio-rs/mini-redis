@@ -12,7 +12,7 @@ use std::{fmt, str, vec};
 #[derive(Debug)]
 pub(crate) struct Parse {
     /// Array frame iterator.
-    parts: vec::IntoIter<Box<Frame>>,
+    parts: vec::IntoIter<Frame>,
 }
 
 /// Error encountered while parsing a frame.
@@ -47,10 +47,7 @@ impl Parse {
     /// Return the next entry. Array frames are arrays of frames, so the next
     /// entry is a frame.
     fn next(&mut self) -> Result<Frame, ParseError> {
-        self.parts
-            .next()
-            .map(|frame| *frame)
-            .ok_or(ParseError::EndOfStream)
+        self.parts.next().ok_or(ParseError::EndOfStream)
     }
 
     /// Return the next entry as a string.

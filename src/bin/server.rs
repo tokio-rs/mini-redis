@@ -19,7 +19,7 @@ pub async fn main() -> mini_redis::Result<()> {
     tracing_subscriber::fmt::try_init()?;
 
     let cli = Cli::from_args();
-    let port = cli.port.unwrap_or(DEFAULT_PORT.to_string());
+    let port = cli.port.as_deref().unwrap_or(DEFAULT_PORT);
 
     // Bind a TCP listener
     let listener = TcpListener::bind(&format!("127.0.0.1:{}", port)).await?;
