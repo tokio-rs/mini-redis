@@ -323,7 +323,7 @@ impl Client {
                     // num-subscribed is the number of channels that the client
                     // is currently subscribed to.
                     [subscribe, schannel, ..]
-                        if **subscribe == "subscribe" && **schannel == channel => {}
+                        if *subscribe == "subscribe" && *schannel == channel => {}
                     _ => return Err(response.to_error()),
                 },
                 frame => return Err(frame.to_error()),
@@ -374,12 +374,10 @@ impl Subscriber {
 
                 match mframe {
                     Frame::Array(ref frame) => match frame.as_slice() {
-                        [message, channel, content] if **message == "message" => {
-                            Ok(Some(Message {
-                                channel: channel.to_string(),
-                                content: Bytes::from(content.to_string()),
-                            }))
-                        }
+                        [message, channel, content] if *message == "message" => Ok(Some(Message {
+                            channel: channel.to_string(),
+                            content: Bytes::from(content.to_string()),
+                        })),
                         _ => Err(mframe.to_error()),
                     },
                     frame => Err(frame.to_error()),
@@ -447,7 +445,7 @@ impl Subscriber {
 
             match response {
                 Frame::Array(ref frame) => match frame.as_slice() {
-                    [unsubscribe, channel, ..] if **unsubscribe == "unsubscribe" => {
+                    [unsubscribe, channel, ..] if *unsubscribe == "unsubscribe" => {
                         let len = self.subscribed_channels.len();
 
                         if len == 0 {
@@ -456,7 +454,7 @@ impl Subscriber {
                         }
 
                         // unsubscribed channel should exist in the subscribed list at this point
-                        self.subscribed_channels.retain(|c| **channel != &c[..]);
+                        self.subscribed_channels.retain(|c| *channel != &c[..]);
 
                         // Only a single channel should be removed from the
                         // liste of subscribed channels.
