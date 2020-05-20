@@ -54,7 +54,7 @@ impl Connection {
     /// # Returns
     ///
     /// On success, the received frame is returned. If the `TcpStream`
-    /// is closed in a way that doesn't break a frame in half, it retuns
+    /// is closed in a way that doesn't break a frame in half, it returns
     /// `None`. Otherwise, an error is returned.
     pub(crate) async fn read_frame(&mut self) -> crate::Result<Option<Frame>> {
         use frame::Error::Incomplete;
@@ -98,7 +98,7 @@ impl Connection {
                     // When `advance` is called on the read buffer, all of the
                     // data up to `len` is discarded. The details of how this
                     // works is left to `BytesMut`. This is often done by moving
-                    // an internal cursor, but it may be done by reallocataing
+                    // an internal cursor, but it may be done by reallocating
                     // and copying data.
                     self.buffer.advance(len);
 

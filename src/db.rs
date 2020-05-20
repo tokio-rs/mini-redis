@@ -253,7 +253,7 @@ impl Drop for Db {
         //
         // First, determine if this is the last `Db` instance. This is done by
         // checking `strong_count`. The count will be 2. One for this `Db`
-        // intance and one for the handle held by the background task.
+        // instance and one for the handle held by the background task.
         if Arc::strong_count(&self.shared) == 2 {
             // The background task must be signaled to shutdown. This is done by
             // setting `State::shutdown` to `true` and signalling the task.
