@@ -129,8 +129,11 @@ const MAX_CONNECTIONS: usize = 250;
 /// `tokio::signal::ctrl_c()` can be used as the `shutdown` argument. This will
 /// listen for a SIGINT signal.
 pub async fn run(listener: TcpListener, shutdown: impl Future) -> crate::Result<()> {
-    // A broadcast channel is used to signal shutdown to each of the active
-    // connections. When the provided `shutdown` future completes
+    // When the provided `shutdown` future completes, we must send a shutdown
+    // message to all active connections. We use a broadcast channel for this
+    // purpose. The call below ignores the receiver of the broadcast pair, and when
+    // a receiver is needed, the subscribe() method on the sender is used to create
+    // one.
     let (notify_shutdown, _) = broadcast::channel(1);
     let (shutdown_complete_tx, shutdown_complete_rx) = mpsc::channel(1);
 
