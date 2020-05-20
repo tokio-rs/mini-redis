@@ -98,7 +98,7 @@ struct Handler {
     /// connection until the peer disconnects **or** a shutdown notification is
     /// received from `shutdown`. In the latter case, any in-flight work being
     /// processed for the peer is continued until it reaches a safe state, at
-    /// which point the connction is terminated.
+    /// which point the connection is terminated.
     shutdown: Shutdown,
 
     /// Not used directly. Instead, when `Handler` is dropped...?
@@ -380,7 +380,7 @@ impl Drop for Handler {
         // Doing so unblocks the listener if the max number of
         // connections has been reached.
         //
-        // This is done in a `Drop` implementation in order to guaranatee that
+        // This is done in a `Drop` implementation in order to guarantee that
         // the permit is added even if the task handling the connection panics.
         // If `add_permit` was called at the end of the `run` function and some
         // bug causes a panic. The permit would never be returned to the

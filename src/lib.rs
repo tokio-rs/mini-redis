@@ -55,7 +55,7 @@ pub const DEFAULT_PORT: &str = "6379";
 /// Error returned by most functions.
 ///
 /// When writing a real application, one might want to consider a specialized
-/// errror handling crate or defining an error type as an `enum` of causes.
+/// error handling crate or defining an error type as an `enum` of causes.
 /// However, for our example, using a boxed `std::error::Error` is sufficient.
 ///
 /// For performance reasons, boxing is avoided in any hot path. For example, in

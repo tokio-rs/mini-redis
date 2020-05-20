@@ -457,7 +457,7 @@ impl Subscriber {
                         self.subscribed_channels.retain(|c| *channel != &c[..]);
 
                         // Only a single channel should be removed from the
-                        // liste of subscribed channels.
+                        // list of subscribed channels.
                         if self.subscribed_channels.len() != len - 1 {
                             return Err(response.to_error());
                         }
