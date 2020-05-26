@@ -105,7 +105,7 @@ impl Set {
         Ok(Set { key, value, expire })
     }
 
-    /// Apply the `Get` command to the specified `Db` instance.
+    /// Apply the `Set` command to the specified `Db` instance.
     ///
     /// The response is written to `dst`. This is called by the server in order
     /// to execute a received command.
