@@ -32,7 +32,7 @@ for interacting with the server.
 Start the server:
 
 ```
-RUST_LOG=debug cargo run --bin server
+RUST_LOG=debug cargo run --bin mini-redis-server
 ```
 
 The [`tracing`](https://github.com/tokio-rs/tracing) crate is used to provide structured logs.
@@ -51,9 +51,9 @@ Additionally, a CLI client is provided to run arbitrary commands from the
 terminal. With the server running, the following works:
 
 ```
-cargo run --bin cli set foo bar
+cargo run --bin mini-redis-cli set foo bar
 
-cargo run --bin cli get foo
+cargo run --bin mini-redis-cli get foo
 ```
 
 ## Supported commands
