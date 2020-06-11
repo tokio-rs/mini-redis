@@ -42,6 +42,21 @@ impl Set {
         }
     }
 
+    /// Get the key
+    pub(crate) fn key(&self) -> &str {
+        &self.key
+    }
+
+    /// Get the value
+    pub(crate) fn value(&self) -> Bytes {
+        self.value.clone()
+    }
+
+    /// Get the expires
+    pub(crate) fn expire(&self) -> Option<Duration> {
+        self.expire
+    }
+
     /// Parse a `Set` instance from a received frame.
     ///
     /// The `Parse` argument provides a cursor-like API to read fields from the

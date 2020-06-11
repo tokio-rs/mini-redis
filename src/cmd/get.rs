@@ -22,6 +22,11 @@ impl Get {
         }
     }
 
+    /// Get the key
+    pub(crate) fn key(&self) -> &str {
+        &self.key
+    }
+
     /// Parse a `Get` instance from a received frame.
     ///
     /// The `Parse` argument provides a cursor-like API to read fields from the

@@ -44,6 +44,8 @@ use parse::{Parse, ParseError};
 
 pub mod server;
 
+pub mod pool;
+
 mod shutdown;
 use shutdown::Shutdown;
 
