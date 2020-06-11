@@ -11,7 +11,7 @@ use tracing::{debug, instrument};
 #[derive(Debug)]
 pub struct Get {
     /// Name of the key to get
-    key: String,
+    pub(crate) key: String,
 }
 
 impl Get {

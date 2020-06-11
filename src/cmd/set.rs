@@ -20,13 +20,13 @@ use tracing::{debug, instrument};
 #[derive(Debug)]
 pub struct Set {
     /// the lookup key
-    key: String,
+    pub(crate) key: String,
 
     /// the value to be stored
-    value: Bytes,
+    pub(crate) value: Bytes,
 
     /// When to expire the key
-    expire: Option<Duration>,
+    pub(crate) expire: Option<Duration>,
 }
 
 impl Set {
