@@ -19,7 +19,7 @@ use crate::{Connection, Db, Frame, Parse, ParseError, Shutdown};
 ///
 /// Methods called on `Command` are delegated to the command implementation.
 #[derive(Debug)]
-pub(crate) enum Command {
+pub enum Command {
     Get(Get),
     Publish(Publish),
     Set(Set),
@@ -37,7 +37,7 @@ impl Command {
     /// # Returns
     ///
     /// On success, the command value is returned, otherwise, `Err` is returned.
-    pub(crate) fn from_frame(frame: Frame) -> crate::Result<Command> {
+    pub fn from_frame(frame: Frame) -> crate::Result<Command> {
         // The frame  value is decorated with `Parse`. `Parse` provides a
         // "cursor" like API which makes parsing the command easier.
         //

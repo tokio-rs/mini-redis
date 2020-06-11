@@ -34,7 +34,7 @@ impl Set {
     ///
     /// If `expire` is `Some`, the value should expire after the specified
     /// duration.
-    pub(crate) fn new(key: impl ToString, value: Bytes, expire: Option<Duration>) -> Set {
+    pub fn new(key: impl ToString, value: Bytes, expire: Option<Duration>) -> Set {
         Set {
             key: key.to_string(),
             value,
@@ -43,13 +43,13 @@ impl Set {
     }
 
     /// Get the key
-    pub(crate) fn key(&self) -> &str {
+    pub fn key(&self) -> &str {
         &self.key
     }
 
     /// Get the value
-    pub(crate) fn value(&self) -> Bytes {
-        self.value.clone()
+    pub fn value(&self) -> &Bytes {
+        &self.value
     }
 
     /// Get the expires

@@ -28,13 +28,13 @@
 pub mod client;
 
 pub mod cmd;
-use cmd::Command;
+pub use cmd::Command;
 
 mod connection;
-use connection::Connection;
+pub use connection::Connection;
 
 mod frame;
-use frame::Frame;
+pub use frame::Frame;
 
 mod db;
 use db::Db;

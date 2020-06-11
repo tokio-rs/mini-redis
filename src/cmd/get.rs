@@ -16,14 +16,14 @@ pub struct Get {
 
 impl Get {
     /// Create a new `Get` command which fetches `key`.
-    pub(crate) fn new(key: impl ToString) -> Get {
+    pub fn new(key: impl ToString) -> Get {
         Get {
             key: key.to_string(),
         }
     }
 
     /// Get the key
-    pub(crate) fn key(&self) -> &str {
+    pub fn key(&self) -> &str {
         &self.key
     }
 

@@ -5,8 +5,9 @@ use std::io::Cursor;
 use std::num::TryFromIntError;
 use std::string::FromUtf8Error;
 
+/// A frame in the Redis protocol.
 #[derive(Clone, Debug)]
-pub(crate) enum Frame {
+pub enum Frame {
     Simple(String),
     Error(String),
     Integer(u64),
