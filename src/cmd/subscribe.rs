@@ -251,7 +251,7 @@ fn make_subscribe_frame(channel_name: String, num_subs: usize) -> Frame {
     response
 }
 
-/// Creates the response to a subcribe request.
+/// Creates the response to an unsubcribe request.
 fn make_unsubscribe_frame(channel_name: String, num_subs: usize) -> Frame {
     let mut response = Frame::array();
     response.push_bulk(Bytes::from_static(b"unsubscribe"));
