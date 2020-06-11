@@ -20,13 +20,13 @@ use tracing::{debug, instrument};
 #[derive(Debug)]
 pub struct Set {
     /// the lookup key
-    pub(crate) key: String,
+    key: String,
 
     /// the value to be stored
-    pub(crate) value: Bytes,
+    value: Bytes,
 
     /// When to expire the key
-    pub(crate) expire: Option<Duration>,
+    expire: Option<Duration>,
 }
 
 impl Set {
@@ -40,6 +40,21 @@ impl Set {
             value,
             expire,
         }
+    }
+
+    /// Get the key
+    pub(crate) fn key(&self) -> &str {
+        &self.key
+    }
+
+    /// Get the value
+    pub(crate) fn value(&self) -> Bytes {
+        self.value.clone()
+    }
+
+    /// Get the expires
+    pub(crate) fn expire(&self) -> Option<Duration> {
+        self.expire
     }
 
     /// Parse a `Set` instance from a received frame.

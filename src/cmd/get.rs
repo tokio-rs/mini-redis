@@ -11,7 +11,7 @@ use tracing::{debug, instrument};
 #[derive(Debug)]
 pub struct Get {
     /// Name of the key to get
-    pub(crate) key: String,
+    key: String,
 }
 
 impl Get {
@@ -20,6 +20,11 @@ impl Get {
         Get {
             key: key.to_string(),
         }
+    }
+
+    /// Get the key
+    pub(crate) fn key(&self) -> &str {
+        &self.key
     }
 
     /// Parse a `Get` instance from a received frame.

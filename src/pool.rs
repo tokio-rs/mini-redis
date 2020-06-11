@@ -4,7 +4,7 @@ use crate::Result;
 use bytes::Bytes;
 use std::time::Duration;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
-use tokio::sync::oneshot::{channel, Sender as OneshotSender};
+use tokio::sync::oneshot::{self, channel};
 use tracing::error;
 
 /// create a new connection Pool from a Client
@@ -15,24 +15,24 @@ pub fn create(client: Client) -> Pool {
     Pool { tx }
 }
 
-/// await for commands send through the channel and forward them to client, then send the result back to the OneshotReceiver
+/// await for commands send through the channel and forward them to client, then send the result back to the oneshot Receiver
 async fn run(
     mut client: Client,
-    mut rx: UnboundedReceiver<(Command, OneshotSender<Result<Option<Bytes>>>)>,
+    mut rx: UnboundedReceiver<(Command, oneshot::Sender<Result<Option<Bytes>>>)>,
 ) {
     while let Some((cmd, tx)) = rx.recv().await {
         match cmd {
             Command::Get(get) => {
-                let key = get.key;
+                let key = get.key();
                 let result = client.get(&key).await;
                 if let Err(_) = tx.send(result) {
                     error!("failed to send Client result, receiver has already been dropped");
                 }
             }
             Command::Set(set) => {
-                let key = set.key;
-                let value = set.value;
-                let expires = set.expire;
+                let key = set.key();
+                let value = set.value();
+                let expires = set.expire();
                 let result = match expires {
                     None => client.set(&key, value).await,
                     Some(exp) => client.set_expires(&key, value, exp).await,
@@ -47,7 +47,7 @@ async fn run(
 }
 
 pub struct Pool {
-    tx: UnboundedSender<(Command, OneshotSender<Result<Option<Bytes>>>)>,
+    tx: UnboundedSender<(Command, oneshot::Sender<Result<Option<Bytes>>>)>,
 }
 
 impl Pool {
@@ -63,7 +63,7 @@ impl Pool {
 /// Commands are send trough mspc Channel, along with the requested Command a oneshot Sender is sent
 /// the Result from the actual Client requested command is then sent through the oneshot Sender and Received on the Connection Receiver
 pub struct Connection {
-    tx: UnboundedSender<(Command, OneshotSender<Result<Option<Bytes>>>)>,
+    tx: UnboundedSender<(Command, oneshot::Sender<Result<Option<Bytes>>>)>,
 }
 
 impl Connection {
