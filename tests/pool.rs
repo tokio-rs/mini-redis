@@ -12,7 +12,7 @@ async fn pool_key_value_get_set() {
 
     let client = client::connect(addr).await.unwrap();
     let pool = pool::create(client);
-    let client = pool.get_connection();
+    let mut client = pool.get_connection();
 
     client.set("hello", "world".into()).await.unwrap();
 

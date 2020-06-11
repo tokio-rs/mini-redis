@@ -3,13 +3,15 @@ use crate::cmd::{Command, Get, Set};
 use crate::Result;
 use bytes::Bytes;
 use std::time::Duration;
-use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
-use tokio::sync::oneshot::{self, channel};
+use tokio::sync::mpsc::{channel, Receiver, Sender};
+use tokio::sync::oneshot;
 use tracing::error;
 
 /// create a new connection Pool from a Client
 pub fn create(client: Client) -> Pool {
-    let (tx, rx) = unbounded_channel();
+    // Setting the message limit to a hard coded value of 32.
+    // in a real-app, the buffer size should be configurable, but we don't need to do that here.
+    let (tx, rx) = channel(32);
     tokio::spawn(async move { run(client, rx).await });
 
     Pool { tx }
@@ -18,7 +20,7 @@ pub fn create(client: Client) -> Pool {
 /// await for commands send through the channel and forward them to client, then send the result back to the oneshot Receiver
 async fn run(
     mut client: Client,
-    mut rx: UnboundedReceiver<(Command, oneshot::Sender<Result<Option<Bytes>>>)>,
+    mut rx: Receiver<(Command, oneshot::Sender<Result<Option<Bytes>>>)>,
 ) {
     while let Some((cmd, tx)) = rx.recv().await {
         match cmd {
@@ -47,7 +49,7 @@ async fn run(
 }
 
 pub struct Pool {
-    tx: UnboundedSender<(Command, oneshot::Sender<Result<Option<Bytes>>>)>,
+    tx: Sender<(Command, oneshot::Sender<Result<Option<Bytes>>>)>,
 }
 
 impl Pool {
@@ -63,24 +65,24 @@ impl Pool {
 /// Commands are send trough mspc Channel, along with the requested Command a oneshot Sender is sent
 /// the Result from the actual Client requested command is then sent through the oneshot Sender and Received on the Connection Receiver
 pub struct Connection {
-    tx: UnboundedSender<(Command, oneshot::Sender<Result<Option<Bytes>>>)>,
+    tx: Sender<(Command, oneshot::Sender<Result<Option<Bytes>>>)>,
 }
 
 impl Connection {
-    pub async fn get(&self, key: &str) -> Result<Option<Bytes>> {
+    pub async fn get(&mut self, key: &str) -> Result<Option<Bytes>> {
         let get = Get::new(key);
-        let (tx, rx) = channel();
-        self.tx.send((Command::Get(get), tx))?;
+        let (tx, rx) = oneshot::channel();
+        self.tx.send((Command::Get(get), tx)).await?;
         match rx.await {
             Ok(res) => res,
             Err(err) => Err(err.into()),
         }
     }
 
-    pub async fn set(&self, key: &str, value: Bytes) -> Result<()> {
+    pub async fn set(&mut self, key: &str, value: Bytes) -> Result<()> {
         let get = Set::new(key, value, None);
-        let (tx, rx) = channel();
-        self.tx.send((Command::Set(get), tx))?;
+        let (tx, rx) = oneshot::channel();
+        self.tx.send((Command::Set(get), tx)).await?;
         match rx.await {
             Ok(res) => res.map(|_| ()),
             Err(err) => Err(err.into()),
@@ -88,14 +90,14 @@ impl Connection {
     }
 
     pub async fn set_expires(
-        &self,
+        &mut self,
         key: &str,
         value: Bytes,
         expiration: Duration,
     ) -> crate::Result<()> {
         let get = Set::new(key, value, Some(expiration));
-        let (tx, rx) = channel();
-        self.tx.send((Command::Set(get), tx))?;
+        let (tx, rx) = oneshot::channel();
+        self.tx.send((Command::Set(get), tx)).await?;
         match rx.await {
             Ok(res) => res.map(|_| ()),
             Err(err) => Err(err.into()),
