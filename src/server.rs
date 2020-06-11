@@ -190,9 +190,13 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) -> crate::Result<
     let Listener {
         mut shutdown_complete_rx,
         shutdown_complete_tx,
+        notify_shutdown,
         ..
     } = server;
-
+    // When `notify_shutdown` is dropped, all tasks which have `subscribe`d will
+    // receive the shutdown signal and can exit
+    drop(notify_shutdown);
+    // Drop final `Sender` so the `Receiver` below can complete
     drop(shutdown_complete_tx);
 
     // Wait for all active connections to finish processing. As the `Sender`
