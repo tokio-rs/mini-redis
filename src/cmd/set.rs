@@ -53,7 +53,7 @@ impl Set {
     }
 
     /// Get the expires
-    pub(crate) fn expire(&self) -> Option<Duration> {
+    pub fn expire(&self) -> Option<Duration> {
         self.expire
     }
 
