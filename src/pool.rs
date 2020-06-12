@@ -33,7 +33,7 @@ async fn run(
             }
             Command::Set(set) => {
                 let key = set.key();
-                let value = set.value();
+                let value = set.value().clone();
                 let expires = set.expire();
                 let result = match expires {
                     None => client.set(&key, value).await,

@@ -18,7 +18,7 @@ use tokio::net::TcpStream;
 /// When sending frames, the frame is first encoded into the write buffer.
 /// The contents of the write buffer are then written to the socket.
 #[derive(Debug)]
-pub(crate) struct Connection {
+pub struct Connection {
     // The `TcpStream`. It is decorated with a `BufWriter`, which provides write
     // level buffering. The `BufWriter` implementation provided by Tokio is
     // sufficient for our needs.
@@ -34,7 +34,7 @@ pub(crate) struct Connection {
 impl Connection {
     /// Create a new `Connection`, backed by `socket`. Read and write buffers
     /// are initialized.
-    pub(crate) fn new(socket: TcpStream) -> Connection {
+    pub fn new(socket: TcpStream) -> Connection {
         Connection {
             stream: BufWriter::new(socket),
             // Default to a 4KB read buffer. For the use case of mini redis,
@@ -56,7 +56,7 @@ impl Connection {
     /// On success, the received frame is returned. If the `TcpStream`
     /// is closed in a way that doesn't break a frame in half, it returns
     /// `None`. Otherwise, an error is returned.
-    pub(crate) async fn read_frame(&mut self) -> crate::Result<Option<Frame>> {
+    pub async fn read_frame(&mut self) -> crate::Result<Option<Frame>> {
         use frame::Error::Incomplete;
 
         loop {
@@ -146,7 +146,7 @@ impl Connection {
     /// syscalls. However, it is fine to call these functions on a *buffered*
     /// write stream. The data will be written to the buffer. Once the buffer is
     /// full, it is flushed to the underlying socket.
-    pub(crate) async fn write_frame(&mut self, frame: &Frame) -> io::Result<()> {
+    pub async fn write_frame(&mut self, frame: &Frame) -> io::Result<()> {
         // Arrays are encoded by encoding each entry. All other frame types are
         // considered literals. For now, mini-redis is not able to encode
         // recursive frame structures. See below for more details.
