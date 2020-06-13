@@ -1,4 +1,4 @@
-use mini_redis::{client, buffer, server};
+use mini_redis::{buffer, client, server};
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 use tokio::task::JoinHandle;

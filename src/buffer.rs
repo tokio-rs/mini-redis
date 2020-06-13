@@ -60,8 +60,7 @@ async fn run(mut client: Client, mut rx: Receiver<Message>) {
                 let key = set.key();
                 let value = set.value().clone();
 
-                client.set(&key, value).await
-                    .map(|_| None)
+                client.set(&key, value).await.map(|_| None)
             }
             _ => unreachable!(),
         };
