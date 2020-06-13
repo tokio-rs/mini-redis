@@ -1,18 +1,18 @@
-use mini_redis::{client, pool, server};
+use mini_redis::{client, buffer, server};
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 use tokio::task::JoinHandle;
 
 /// A basic "hello world" style test. A server instance is started in a
-/// background task. A client instance is then established and inserted into the pool, set and get
-/// commands are then sent to the server. The response is then evaluated
+/// background task. A client instance is then established and used to intialize
+/// the buffer. Set and get commands are sent to the server. The response is
+/// then evaluated.
 #[tokio::test]
 async fn pool_key_value_get_set() {
     let (addr, _) = start_server().await;
 
     let client = client::connect(addr).await.unwrap();
-    let pool = pool::create(client);
-    let mut client = pool.get_connection();
+    let mut client = buffer(client);
 
     client.set("hello", "world".into()).await.unwrap();
 
