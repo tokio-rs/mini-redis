@@ -52,7 +52,7 @@ impl Set {
         &self.value
     }
 
-    /// Get the expires
+    /// Get the expire
     pub fn expire(&self) -> Option<Duration> {
         self.expire
     }

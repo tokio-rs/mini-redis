@@ -15,7 +15,7 @@ use tokio::sync::oneshot;
 ///
 /// The strategy for dealing with this class of problem is to spawn a dedicated
 /// Tokio task to manage the Redis connection and using "message passing" to
-/// operate on hte connection. Commands are pushed into a channel. The
+/// operate on the connection. Commands are pushed into a channel. The
 /// connection task pops commands off of the channel and applies them to the
 /// Redis connection. When the response is received, it is forwarded to the
 /// original requester.
