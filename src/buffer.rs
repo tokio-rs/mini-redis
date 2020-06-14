@@ -1,5 +1,4 @@
 use crate::client::Client;
-use crate::cmd::{Command, Get, Set};
 use crate::Result;
 
 use bytes::Bytes;
@@ -34,6 +33,13 @@ pub fn buffer(client: Client) -> Buffer {
     Buffer { tx }
 }
 
+// Enum used to message pass the requested command from the `Buffer` handle
+#[derive(Debug)]
+enum Command {
+    Get(String),
+    Set(String, Bytes),
+}
+
 // Message type sent over the channel to the connection task.
 //
 // `Command` is the command to forward to the connection.
@@ -52,17 +58,8 @@ async fn run(mut client: Client, mut rx: Receiver<Message>) {
     while let Some((cmd, tx)) = rx.recv().await {
         // The command is forwarded to the connection
         let response = match cmd {
-            Command::Get(get) => {
-                let key = get.key();
-                client.get(&key).await
-            }
-            Command::Set(set) => {
-                let key = set.key();
-                let value = set.value().clone();
-
-                client.set(&key, value).await.map(|_| None)
-            }
-            _ => unreachable!(),
+            Command::Get(key) => client.get(&key).await,
+            Command::Set(key, value) => client.set(&key, value).await.map(|_| None),
         };
 
         // Send the response back to the caller.
@@ -85,13 +82,13 @@ impl Buffer {
     /// connection has the ability to send the request.
     pub async fn get(&mut self, key: &str) -> Result<Option<Bytes>> {
         // Initialize a new `Get` command to send via the channel.
-        let get = Get::new(key);
+        let get = Command::Get(key.into());
 
         // Initialize a new oneshot to be used to receive the response back from the connection.
         let (tx, rx) = oneshot::channel();
 
         // Send the request
-        self.tx.send((Command::Get(get), tx)).await?;
+        self.tx.send((get, tx)).await?;
 
         // Await the response
         match rx.await {
@@ -106,13 +103,13 @@ impl Buffer {
     /// connection has the ability to send the request
     pub async fn set(&mut self, key: &str, value: Bytes) -> Result<()> {
         // Initialize a new `Set` command to send via the channel.
-        let get = Set::new(key, value, None);
+        let set = Command::Set(key.into(), value);
 
         // Initialize a new oneshot to be used to receive the response back from the connection.
         let (tx, rx) = oneshot::channel();
 
         // Send the request
-        self.tx.send((Command::Set(get), tx)).await?;
+        self.tx.send((set, tx)).await?;
 
         // Await the response
         match rx.await {
