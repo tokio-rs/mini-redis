@@ -1,3 +1,6 @@
+//! Provides a type representing a Redis protocol frame as well as utilities for
+//! parsing frames from a byte array.
+
 use bytes::{Buf, Bytes};
 use std::convert::TryInto;
 use std::fmt;
@@ -17,7 +20,7 @@ pub enum Frame {
 }
 
 #[derive(Debug)]
-pub(crate) enum Error {
+pub enum Error {
     /// Not enough data is available to parse a message
     Incomplete,
 
@@ -60,7 +63,7 @@ impl Frame {
     }
 
     /// Checks if an entire message can be decoded from `src`
-    pub(crate) fn check(src: &mut Cursor<&[u8]>) -> Result<(), Error> {
+    pub fn check(src: &mut Cursor<&[u8]>) -> Result<(), Error> {
         match get_u8(src)? {
             b'+' => {
                 get_line(src)?;
@@ -100,7 +103,7 @@ impl Frame {
     }
 
     /// The message has already been validated with `scan`.
-    pub(crate) fn parse(src: &mut Cursor<&[u8]>) -> Result<Frame, Error> {
+    pub fn parse(src: &mut Cursor<&[u8]>) -> Result<Frame, Error> {
         match get_u8(src)? {
             b'+' => {
                 // Read the line and convert it to `Vec<u8>`
