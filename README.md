@@ -7,8 +7,10 @@
 The intent of this project is to provide a larger example of writing a Tokio
 application.
 
-**Disclaimer** Don't even think about trying to use this in production... just
-don't.
+**Disclaimer** Please don't use mini-redis in production. This project is intended to be
+a learning resource, and omits various parts of the Redis protocol because implementing
+them would not introduce any new concepts. We will not add new features because you need
+them in your project — use one of the fully featured alternatives instead.
 
 ## Why Redis
 
@@ -151,12 +153,6 @@ Contributions should come with extensive comments targetted to new Tokio users.
 
 Contributions that only focus on clarifying and improving comments are very
 welcome.
-
-## FAQ
-
-#### Should I use this in production?
-
-No.
 
 ## License
 
