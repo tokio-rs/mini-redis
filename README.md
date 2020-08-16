@@ -7,10 +7,11 @@
 The intent of this project is to provide a larger example of writing a Tokio
 application.
 
-**Disclaimer** Please don't use mini-redis in production. This project is intended to be
-a learning resource, and omits various parts of the Redis protocol because implementing
-them would not introduce any new concepts. We will not add new features because you need
-them in your project — use one of the fully featured alternatives instead.
+**Disclaimer** Please don't use mini-redis in production. This project is
+intended to be a learning resource, and omits various parts of the Redis
+protocol because implementing them would not introduce any new concepts. We will
+not add new features because you need them in your project — use one of the
+fully featured alternatives instead.
 
 ## Why Redis
 
