@@ -2,7 +2,7 @@
 authors = ["Carl Lerche <me@carllerche.com>"]
 edition = "2018"
 name = "mini-redis"
-version = "0.2.0"
+version = "0.3.0"
 license = "MIT"
 readme = "README.md"
 documentation = "https://docs.rs/mini-redis/0.1.0/mini-redis/"

@@ -223,7 +223,7 @@ checksum = "3728d817d99e5ac407411fa471ff9800a778d88a24685968b36824eaf4bee400"
 
 [[package]]
 name = "mini-redis"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "async-stream",
  "atoi",
