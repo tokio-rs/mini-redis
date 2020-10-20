@@ -47,9 +47,10 @@ enum Command {
 /// started when the function is called. The body of the function is executed
 /// within the newly spawned runtime.
 ///
-/// `basic_scheduler` is used here to avoid spawning background threads. The CLI
-/// tool use case benefits more by being lighter instead of multi-threaded.
-#[tokio::main(basic_scheduler)]
+/// `flavor = "current_thread"` is used here to avoid spawning background
+/// threads. The CLI tool use case benefits more by being lighter instead of
+/// multi-threaded.
+#[tokio::main(flavor = "current_thread")]
 async fn main() -> mini_redis::Result<()> {
     // Enable logging
     tracing_subscriber::fmt::try_init()?;

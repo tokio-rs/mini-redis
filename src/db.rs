@@ -191,7 +191,7 @@ impl Db {
         if notify {
             // Finally, only notify the background task if it needs to update
             // its state to reflect a new expiration.
-            self.shared.background_task.notify();
+            self.shared.background_task.notify_one();
         }
     }
 
@@ -264,7 +264,7 @@ impl Drop for Db {
             // reduce lock contention by ensuring the background task doesn't
             // wake up only to be unable to acquire the mutex.
             drop(state);
-            self.shared.background_task.notify();
+            self.shared.background_task.notify_one();
         }
     }
 }
@@ -340,7 +340,7 @@ async fn purge_expired_tasks(shared: Arc<Shared>) {
             // state as new keys have been set to expire early. This is done by
             // looping.
             tokio::select! {
-                _ = time::delay_until(when) => {}
+                _ = time::sleep_until(when) => {}
                 _ = shared.background_task.notified() => {}
             }
         } else {
