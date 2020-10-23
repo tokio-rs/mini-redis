@@ -2,8 +2,9 @@ use crate::cmd::{Parse, ParseError, Unknown};
 use crate::{Command, Connection, Db, Frame, Shutdown};
 
 use bytes::Bytes;
+use std::pin::Pin;
 use tokio::select;
-use tokio::stream::{StreamExt, StreamMap};
+use tokio::stream::{Stream, StreamExt, StreamMap};
 use tokio::sync::broadcast;
 
 /// Subscribes the client to one or more channels.
@@ -24,6 +25,12 @@ pub struct Subscribe {
 pub struct Unsubscribe {
     channels: Vec<String>,
 }
+
+/// Stream of messages. The stream receives messages from the
+/// `broadcast::Receiver`. We use `stream!` to create a `Stream` that consumes
+/// messages. Because `stream!` values cannot be named, we box the stream using
+/// a trait object.
+type Messages = Pin<Box<dyn Stream<Item = Bytes> + Send>>;
 
 impl Subscribe {
     /// Creates a new `Subscribe` command to listen on the specified channels.
@@ -125,14 +132,6 @@ impl Subscribe {
             select! {
                 // Receive messages from subscribed channels
                 Some((channel_name, msg)) = subscriptions.next() => {
-                    use tokio::sync::broadcast::RecvError;
-
-                    let msg = match msg {
-                        Ok(msg) => msg,
-                        Err(RecvError::Lagged(_)) => continue,
-                        Err(RecvError::Closed) => unreachable!(),
-                    };
-
                     dst.write_frame(&make_message_frame(channel_name, msg)).await?;
                 }
                 res = dst.read_frame() => {
@@ -172,12 +171,23 @@ impl Subscribe {
 
 async fn subscribe_to_channel(
     channel_name: String,
-    subscriptions: &mut StreamMap<String, broadcast::Receiver<Bytes>>,
+    subscriptions: &mut StreamMap<String, Messages>,
     db: &Db,
     dst: &mut Connection,
 ) -> crate::Result<()> {
+    let mut rx = db.subscribe(channel_name.clone());
+
     // Subscribe to the channel.
-    let rx = db.subscribe(channel_name.clone());
+    let rx = Box::pin(async_stream::stream! {
+        loop {
+            match rx.recv().await {
+                Ok(msg) => yield msg,
+                // If we lagged in consuming messages, just resume.
+                Err(broadcast::error::RecvError::Lagged(_)) => {}
+                Err(_) => break,
+            }
+        }
+    });
 
     // Track subscription in this client's subscription set.
     subscriptions.insert(channel_name.clone(), rx);
@@ -197,7 +207,7 @@ async fn subscribe_to_channel(
 async fn handle_command(
     frame: Frame,
     subscribe_to: &mut Vec<String>,
-    subscriptions: &mut StreamMap<String, broadcast::Receiver<Bytes>>,
+    subscriptions: &mut StreamMap<String, Messages>,
     dst: &mut Connection,
 ) -> crate::Result<()> {
     // A command has been received from the client.

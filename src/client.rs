@@ -197,7 +197,7 @@ impl Client {
     ///     assert_eq!(val, "bar");
     ///
     ///     // Wait for the TTL to expire
-    ///     time::delay_for(ttl).await;
+    ///     time::sleep(ttl).await;
     ///
     ///     let val = client.get("foo").await.unwrap();
     ///     assert!(val.is_some());

@@ -2,7 +2,7 @@
 authors = ["Carl Lerche <me@carllerche.com>"]
 edition = "2018"
 name = "mini-redis"
-version = "0.2.0"
+version = "0.3.0"
 license = "MIT"
 readme = "README.md"
 documentation = "https://docs.rs/mini-redis/0.1.0/mini-redis/"
@@ -23,13 +23,13 @@ path = "src/bin/server.rs"
 [dependencies]
 async-stream = "0.2.1"
 atoi = "0.3.2"
-bytes = "0.5.4"
+bytes = "0.6.0"
 structopt = "0.3.14"
-tokio = { version = "0.2.21", features = ["full"] }
+tokio = { version = "0.3.1", features = ["full"] }
 tracing = "0.1.13"
 tracing-futures = { version = "0.2.3" }
 tracing-subscriber = "0.2.2"
 
 [dev-dependencies]
 # Enable test-utilities in dev mode only. This is mostly for tests.
-tokio = { version = "0.2", features = ["test-util"] }
+tokio = { version = "0.3", features = ["test-util"] }

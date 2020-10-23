@@ -304,7 +304,7 @@ impl Listener {
             }
 
             // Pause execution until the back off period elapses.
-            time::delay_for(Duration::from_secs(backoff)).await;
+            time::sleep(Duration::from_secs(backoff)).await;
 
             // Double the back off
             backoff *= 2;
