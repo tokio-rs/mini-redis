@@ -21,7 +21,7 @@ name = "mini-redis-server"
 path = "src/bin/server.rs"
 
 [dependencies]
-async-stream = "0.2.1"
+async-stream = "0.3.0"
 atoi = "0.3.2"
 bytes = "0.6.0"
 structopt = "0.3.14"
