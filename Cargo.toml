@@ -2,10 +2,10 @@
 authors = ["Carl Lerche <me@carllerche.com>"]
 edition = "2018"
 name = "mini-redis"
-version = "0.3.0"
+version = "0.4.0"
 license = "MIT"
 readme = "README.md"
-documentation = "https://docs.rs/mini-redis/0.1.0/mini-redis/"
+documentation = "https://docs.rs/mini-redis/0.4.0/mini-redis/"
 repository = "https://github.com/tokio-rs/mini-redis"
 description = """
 An incomplete implementation of a Rust client and server. Used as a
@@ -23,13 +23,18 @@ path = "src/bin/server.rs"
 [dependencies]
 async-stream = "0.3.0"
 atoi = "0.3.2"
-bytes = "0.6.0"
+bytes = { git = "https://github.com/tokio-rs/bytes" }
 structopt = "0.3.14"
-tokio = { version = "0.3.1", features = ["full"] }
+tokio = { git = "https://github.com/tokio-rs/tokio", features = ["full"] }
+tokio-stream = { git = "https://github.com/tokio-rs/tokio" }
 tracing = "0.1.13"
 tracing-futures = { version = "0.2.3" }
 tracing-subscriber = "0.2.2"
 
 [dev-dependencies]
 # Enable test-utilities in dev mode only. This is mostly for tests.
-tokio = { version = "0.3", features = ["test-util"] }
+tokio = { git = "https://github.com/tokio-rs/tokio", features = ["test-util"] }
+
+# TODO: remove once Tokio 1.0 is released
+[patch.crates-io]
+bytes = { git = "https://github.com/tokio-rs/bytes" }

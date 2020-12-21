@@ -10,7 +10,7 @@ use bytes::Bytes;
 use std::io::{Error, ErrorKind};
 use std::time::Duration;
 use tokio::net::{TcpStream, ToSocketAddrs};
-use tokio::stream::Stream;
+use tokio_stream::Stream;
 use tracing::{debug, instrument};
 
 /// Established connection with a Redis server.

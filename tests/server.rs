@@ -1,6 +1,6 @@
 use mini_redis::server;
 
-use std::net::{Shutdown, SocketAddr};
+use std::net::SocketAddr;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::time::{self, Duration};
@@ -45,7 +45,7 @@ async fn key_value_get_set() {
         .unwrap();
 
     // Shutdown the write half
-    stream.shutdown(Shutdown::Write).unwrap();
+    stream.shutdown().await.unwrap();
 
     // Read "world" response
     let mut response = [0; 11];
