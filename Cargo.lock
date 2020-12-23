@@ -538,12 +538,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "slab"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c111b5bd5695e56cffe5129854aa230b39c93a305372fdbb2668ca2394eea9f8"
-
-[[package]]
 name = "smallvec"
 version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -633,7 +627,8 @@ dependencies = [
 [[package]]
 name = "tokio"
 version = "1.0.0"
-source = "git+https://github.com/tokio-rs/tokio#a8dda19da4e94acd45f34b5eb359b4cffafa833f"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f4bfdcbd00fa893ac0549b38aa27080636a0104b0d0c38475a99439405e1df8"
 dependencies = [
  "autocfg",
  "bytes",
@@ -645,7 +640,6 @@ dependencies = [
  "parking_lot",
  "pin-project-lite",
  "signal-hook-registry",
- "slab",
  "tokio-macros",
  "winapi",
 ]
@@ -653,7 +647,8 @@ dependencies = [
 [[package]]
 name = "tokio-macros"
 version = "1.0.0"
-source = "git+https://github.com/tokio-rs/tokio#a8dda19da4e94acd45f34b5eb359b4cffafa833f"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "42517d2975ca3114b22a16192634e8241dc5cc1f130be194645970cc1c371494"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -663,7 +658,8 @@ dependencies = [
 [[package]]
 name = "tokio-stream"
 version = "0.1.0"
-source = "git+https://github.com/tokio-rs/tokio#a8dda19da4e94acd45f34b5eb359b4cffafa833f"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3f3be913b74b13210c8fe04b17ab833f5a124f45b93d0f99f59fff621f64392a"
 dependencies = [
  "async-stream",
  "futures-core",

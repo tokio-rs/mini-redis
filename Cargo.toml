@@ -25,12 +25,12 @@ async-stream = "0.3.0"
 atoi = "0.3.2"
 bytes = "1"
 structopt = "0.3.14"
-tokio = { git = "https://github.com/tokio-rs/tokio", features = ["full"] }
-tokio-stream = { git = "https://github.com/tokio-rs/tokio" }
+tokio = { version = "1", features = ["full"] }
+tokio-stream = "0.1"
 tracing = "0.1.13"
 tracing-futures = { version = "0.2.3" }
 tracing-subscriber = "0.2.2"
 
 [dev-dependencies]
 # Enable test-utilities in dev mode only. This is mostly for tests.
-tokio = { git = "https://github.com/tokio-rs/tokio", features = ["test-util"] }
+tokio = { version = "1", features = ["test-util"] }
