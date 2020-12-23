@@ -238,7 +238,10 @@ impl Listener {
             // "forget" the permit, which drops the permit value **without**
             // incrementing the semaphore's permits. Then, in the handler task
             // we manually add a new permit when processing completes.
-            self.limit_connections.acquire().await.forget();
+            //
+            // `acquire()` returns `Err` when the semaphore has been closed. We
+            // don't ever close the sempahore, so `unwrap()` is safe.
+            self.limit_connections.acquire().await.unwrap().forget();
 
             // Accept a new socket. This will attempt to perform error handling.
             // The `accept` method internally attempts to recover errors, so an

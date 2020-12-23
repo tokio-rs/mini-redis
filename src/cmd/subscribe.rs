@@ -4,8 +4,8 @@ use crate::{Command, Connection, Db, Frame, Shutdown};
 use bytes::Bytes;
 use std::pin::Pin;
 use tokio::select;
-use tokio::stream::{Stream, StreamExt, StreamMap};
 use tokio::sync::broadcast;
+use tokio_stream::{Stream, StreamExt, StreamMap};
 
 /// Subscribes the client to one or more channels.
 ///
