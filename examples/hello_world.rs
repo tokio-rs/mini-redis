@@ -5,7 +5,7 @@
 //!
 //! You can test this out by running:
 //!
-//!     cargo run --bin server
+//!     cargo run --bin mini-redis-server
 //!
 //! And then in another terminal run:
 //!
