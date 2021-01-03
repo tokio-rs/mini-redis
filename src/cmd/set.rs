@@ -92,13 +92,13 @@ impl Set {
 
         // Attempt to parse another string.
         match parse.next_string() {
-            Ok(s) if s == "EX" => {
+            Ok(s) if s.to_uppercase() == "EX" => {
                 // An expiration is specified in seconds. The next value is an
                 // integer.
                 let secs = parse.next_int()?;
                 expire = Some(Duration::from_secs(secs));
             }
-            Ok(s) if s == "PX" => {
+            Ok(s) if s.to_uppercase() == "PX" => {
                 // An expiration is specified in milliseconds. The next value is
                 // an integer.
                 let ms = parse.next_int()?;
