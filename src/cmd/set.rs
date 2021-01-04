@@ -92,13 +92,13 @@ impl Set {
 
         // Attempt to parse another string.
         match parse.next_string() {
-            Ok(s) if s == "EX" => {
+            Ok(s) if s.to_uppercase() == "EX" => {
                 // An expiration is specified in seconds. The next value is an
                 // integer.
                 let secs = parse.next_int()?;
                 expire = Some(Duration::from_secs(secs));
             }
-            Ok(s) if s == "PX" => {
+            Ok(s) if s.to_uppercase() == "PX" => {
                 // An expiration is specified in milliseconds. The next value is
                 // an integer.
                 let ms = parse.next_int()?;
@@ -146,6 +146,16 @@ impl Set {
         frame.push_bulk(Bytes::from("set".as_bytes()));
         frame.push_bulk(Bytes::from(self.key.into_bytes()));
         frame.push_bulk(self.value);
+        if let Some(ms) = self.expire {
+            // Expirations in Redis procotol can be specified in two ways
+            // 1. SET key value EX seconds
+            // 2. SET key value PX milliseconds
+            // We the second option because it allows greater precision and
+            // src/bin/cli.rs parses the expiration argument as milliseconds
+            // in duration_from_ms_str()
+            frame.push_bulk(Bytes::from("px".as_bytes()));
+            frame.push_int(ms.as_millis() as u64);
+        }
         frame
     }
 }
