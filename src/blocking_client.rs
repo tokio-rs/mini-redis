@@ -157,7 +157,7 @@ impl Client {
     ///
     /// fn main() {
     ///     let ttl = Duration::from_millis(500);
-    ///     let mut client = client::blocking_connect("localhost:6379").unwrap();
+    ///     let mut client = blocking_client::connect("localhost:6379").unwrap();
     ///
     ///     client.set_expires("foo", "bar".into(), ttl).unwrap();
     ///
