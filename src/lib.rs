@@ -26,6 +26,7 @@
 //!   representation.
 
 pub mod client;
+pub mod blocking_client;
 
 pub mod cmd;
 pub use cmd::Command;
