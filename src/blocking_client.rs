@@ -2,10 +2,10 @@
 //!
 //! Provides a blocking connect and methods for issuing the supported commands.
 
-use tokio::runtime::Runtime;
-use tokio::net::ToSocketAddrs;
 use bytes::Bytes;
 use std::time::Duration;
+use tokio::net::ToSocketAddrs;
+use tokio::runtime::Runtime;
 
 pub use crate::client::Message;
 
@@ -75,10 +75,7 @@ pub fn connect<T: ToSocketAddrs>(addr: T) -> crate::Result<Client> {
 
     let inner = rt.block_on(crate::client::connect(addr))?;
 
-    Ok(Client {
-        inner,
-        rt,
-    })
+    Ok(Client { inner, rt })
 }
 
 impl Client {
@@ -178,7 +175,8 @@ impl Client {
         value: Bytes,
         expiration: Duration,
     ) -> crate::Result<()> {
-        self.rt.block_on(self.inner.set_expires(key, value, expiration))
+        self.rt
+            .block_on(self.inner.set_expires(key, value, expiration))
     }
 
     /// Posts `message` to the given `channel`.
