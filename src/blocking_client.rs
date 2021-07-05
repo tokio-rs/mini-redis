@@ -11,12 +11,12 @@ pub use crate::client::Message;
 
 /// Established connection with a Redis server.
 ///
-/// Backed by a single `TcpStream`, `Client` provides basic network client
-/// functionality (no pooling, retrying, ...). Connections are established using
-/// the [`connect`](fn@connect) function.
+/// Backed by a single `TcpStream`, `BlockingClient` provides basic network
+/// client functionality (no pooling, retrying, ...). Connections are
+/// established using the [`connect`](fn@connect) function.
 ///
 /// Requests are issued using the various methods of `Client`.
-pub struct Client {
+pub struct BlockingClient {
     /// The asynchronous `Client`.
     inner: crate::client::Client,
 
@@ -28,9 +28,10 @@ pub struct Client {
 /// A client that has entered pub/sub mode.
 ///
 /// Once clients subscribe to a channel, they may only perform pub/sub related
-/// commands. The `Client` type is transitioned to a `Subscriber` type in order
-/// to prevent non-pub/sub methods from being called.
-pub struct Subscriber {
+/// commands. The `BlockingClient` type is transitioned to a
+/// `BlockingSubscriber` type in order to prevent non-pub/sub methods from being
+/// called.
+pub struct BlockingSubscriber {
     /// The asynchronous `Subscriber`.
     inner: crate::client::Subscriber,
 
@@ -68,17 +69,17 @@ struct SubscriberIterator {
 /// # drop(client);
 /// }
 /// ```
-pub fn connect<T: ToSocketAddrs>(addr: T) -> crate::Result<Client> {
+pub fn connect<T: ToSocketAddrs>(addr: T) -> crate::Result<BlockingClient> {
     let rt = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?;
 
     let inner = rt.block_on(crate::client::connect(addr))?;
 
-    Ok(Client { inner, rt })
+    Ok(BlockingClient { inner, rt })
 }
 
-impl Client {
+impl BlockingClient {
     /// Get the value of key.
     ///
     /// If the key does not exist the special value `None` is returned.
@@ -206,20 +207,21 @@ impl Client {
     /// Subscribes the client to the specified channels.
     ///
     /// Once a client issues a subscribe command, it may no longer issue any
-    /// non-pub/sub commands. The function consumes `self` and returns a `Subscriber`.
+    /// non-pub/sub commands. The function consumes `self` and returns a
+    /// `BlockingSubscriber`.
     ///
-    /// The `Subscriber` value is used to receive messages as well as manage the
-    /// list of channels the client is subscribed to.
-    pub fn subscribe(self, channels: Vec<String>) -> crate::Result<Subscriber> {
+    /// The `BlockingSubscriber` value is used to receive messages as well as
+    /// manage the list of channels the client is subscribed to.
+    pub fn subscribe(self, channels: Vec<String>) -> crate::Result<BlockingSubscriber> {
         let subscriber = self.rt.block_on(self.inner.subscribe(channels))?;
-        Ok(Subscriber {
+        Ok(BlockingSubscriber {
             inner: subscriber,
             rt: self.rt,
         })
     }
 }
 
-impl Subscriber {
+impl BlockingSubscriber {
     /// Returns the set of channels currently subscribed to.
     pub fn get_subscribed(&self) -> &[String] {
         self.inner.get_subscribed()
