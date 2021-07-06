@@ -25,6 +25,7 @@
 //!   intermediate representation between a "command" and the byte
 //!   representation.
 
+pub mod blocking_client;
 pub mod client;
 
 pub mod cmd;
