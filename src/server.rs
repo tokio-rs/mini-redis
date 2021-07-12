@@ -188,6 +188,7 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) -> crate::Result<
     // explicitly drop `shutdown_transmitter`. This is important, as the
     // `.await` below would otherwise never complete.
     let Listener {
+        db,
         mut shutdown_complete_rx,
         shutdown_complete_tx,
         notify_shutdown,
@@ -204,6 +205,9 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) -> crate::Result<
     // `Sender` instances are held by connection handler tasks. When those drop,
     // the `mpsc` channel will close and `recv()` will return `None`.
     let _ = shutdown_complete_rx.recv().await;
+
+    // Signal the 'Db' instance to shutdown the task that purges expired keys
+    db.shutdown_purge_task();
 
     Ok(())
 }

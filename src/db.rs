@@ -4,6 +4,7 @@ use tokio::time::{self, Duration, Instant};
 use bytes::Bytes;
 use std::collections::{BTreeMap, HashMap};
 use std::sync::{Arc, Mutex};
+use tracing::debug;
 
 /// Server state shared across all connections.
 ///
@@ -244,28 +245,20 @@ impl Db {
             // subscribers. In this case, return `0`.
             .unwrap_or(0)
     }
-}
 
-impl Drop for Db {
-    fn drop(&mut self) {
-        // If this is the last active `Db` instance, the background task must be
-        // notified to shut down.
-        //
-        // First, determine if this is the last `Db` instance. This is done by
-        // checking `strong_count`. The count will be 2. One for this `Db`
-        // instance and one for the handle held by the background task.
-        if Arc::strong_count(&self.shared) == 2 {
-            // The background task must be signaled to shutdown. This is done by
-            // setting `State::shutdown` to `true` and signalling the task.
-            let mut state = self.shared.state.lock().unwrap();
-            state.shutdown = true;
+    /// Signals the purge background task to shutdown. This should be called
+    /// once, when the `Db` instance is no longer required.
+    pub(crate) fn shutdown_purge_task(&self) {
+        // The background task must be signaled to shutdown. This is done by
+        // setting `State::shutdown` to `true` and signalling the task.
+        let mut state = self.shared.state.lock().unwrap();
+        state.shutdown = true;
 
-            // Drop the lock before signalling the background task. This helps
-            // reduce lock contention by ensuring the background task doesn't
-            // wake up only to be unable to acquire the mutex.
-            drop(state);
-            self.shared.background_task.notify_one();
-        }
+        // Drop the lock before signalling the background task. This helps
+        // reduce lock contention by ensuring the background task doesn't
+        // wake up only to be unable to acquire the mutex.
+        drop(state);
+        self.shared.background_task.notify_one();
     }
 }
 
@@ -349,4 +342,6 @@ async fn purge_expired_tasks(shared: Arc<Shared>) {
             shared.background_task.notified().await;
         }
     }
+
+    debug!("Purge background task shutdown")
 }
