@@ -199,6 +199,8 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) {
     drop(notify_shutdown);
     // Drop final `Sender` so the `Receiver` below can complete
     drop(shutdown_complete_tx);
+    // Drop `notify_shutdown`, so that the `Handler` can get shutdown notify to close the clients socket.
+    drop(notify_shutdown);
 
     // Wait for all active connections to finish processing. As the `Sender`
     // handle held by the listener has been dropped above, the only remaining
