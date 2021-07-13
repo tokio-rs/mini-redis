@@ -6,6 +6,16 @@ use std::collections::{BTreeMap, HashMap};
 use std::sync::{Arc, Mutex};
 use tracing::debug;
 
+/// A wrapper around a `Db` instance. This exists to allow orderly cleanup
+/// of the `Db` by signalling the background purge task to shutdown when
+/// this struct is dropped.
+#[derive(Debug)]
+pub(crate) struct DbHolder {
+    /// The `Db` instance that will be shutdown when this `DbHolder` struct
+    /// is dropped.
+    db: Db,
+}
+
 /// Server state shared across all connections.
 ///
 /// `Db` contains a `HashMap` storing the key/value data and all
@@ -91,6 +101,27 @@ struct Entry {
     /// Instant at which the entry expires and should be removed from the
     /// database.
     expires_at: Option<Instant>,
+}
+
+impl DbHolder {
+    /// Create a new `DbHolder`, wrapping a `Db` instance. When this is dropped
+    /// the `Db`'s purge task will be shutdown.
+    pub(crate) fn new() -> DbHolder {
+        DbHolder { db: Db::new() }
+    }
+
+    /// Get the shared database. Internally, this is an
+    /// `Arc`, so a clone only increments the ref count.
+    pub(crate) fn db(&self) -> Db {
+        self.db.clone()
+    }
+}
+
+impl Drop for DbHolder {
+    fn drop(&mut self) {
+        // Signal the 'Db' instance to shutdown the task that purges expired keys
+        self.db.shutdown_purge_task();
+    }
 }
 
 impl Db {
@@ -246,9 +277,9 @@ impl Db {
             .unwrap_or(0)
     }
 
-    /// Signals the purge background task to shutdown. This should be called
-    /// once, when the `Db` instance is no longer required.
-    pub(crate) fn shutdown_purge_task(&self) {
+    /// Signals the purge background task to shutdown. This is called by the
+    /// `DbShutdown`s `Drop` implementation.
+    fn shutdown_purge_task(&self) {
         // The background task must be signaled to shutdown. This is done by
         // setting `State::shutdown` to `true` and signalling the task.
         let mut state = self.shared.state.lock().unwrap();

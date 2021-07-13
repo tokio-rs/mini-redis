@@ -39,6 +39,7 @@ pub use frame::Frame;
 
 mod db;
 use db::Db;
+use db::DbHolder;
 
 mod parse;
 use parse::{Parse, ParseError};

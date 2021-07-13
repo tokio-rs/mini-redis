@@ -20,7 +20,7 @@ async fn pool_key_value_get_set() {
     assert_eq!(b"world", &value[..])
 }
 
-async fn start_server() -> (SocketAddr, JoinHandle<mini_redis::Result<()>>) {
+async fn start_server() -> (SocketAddr, JoinHandle<()>) {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
 

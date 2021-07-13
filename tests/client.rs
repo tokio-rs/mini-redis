@@ -82,7 +82,7 @@ async fn unsubscribes_from_channels() {
     assert_eq!(subscriber.get_subscribed().len(), 0);
 }
 
-async fn start_server() -> (SocketAddr, JoinHandle<mini_redis::Result<()>>) {
+async fn start_server() -> (SocketAddr, JoinHandle<()>) {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
 
