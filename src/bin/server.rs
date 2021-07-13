@@ -24,7 +24,9 @@ pub async fn main() -> mini_redis::Result<()> {
     // Bind a TCP listener
     let listener = TcpListener::bind(&format!("127.0.0.1:{}", port)).await?;
 
-    server::run(listener, signal::ctrl_c()).await
+    server::run(listener, signal::ctrl_c()).await;
+
+    Ok(())
 }
 
 #[derive(StructOpt, Debug)]

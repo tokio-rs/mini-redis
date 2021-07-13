@@ -3,7 +3,7 @@
 //! Provides an async `run` function that listens for inbound connections,
 //! spawning a task per connection.
 
-use crate::{Command, Connection, Db, Shutdown};
+use crate::{Command, Connection, Db, DbDropGuard, Shutdown};
 
 use std::future::Future;
 use std::sync::Arc;
@@ -21,9 +21,9 @@ struct Listener {
     /// Contains the key / value store as well as the broadcast channels for
     /// pub/sub.
     ///
-    /// This is a wrapper around an `Arc`. This enables `db` to be cloned and
-    /// passed into the per connection state (`Handler`).
-    db: Db,
+    /// This holds a wrapper around an `Arc`. The internal `Db` can be
+    /// retrieved and passed into the per connection state (`Handler`).
+    db_holder: DbDropGuard,
 
     /// TCP listener supplied by the `run` caller.
     listener: TcpListener,
@@ -128,7 +128,7 @@ const MAX_CONNECTIONS: usize = 250;
 ///
 /// `tokio::signal::ctrl_c()` can be used as the `shutdown` argument. This will
 /// listen for a SIGINT signal.
-pub async fn run(listener: TcpListener, shutdown: impl Future) -> crate::Result<()> {
+pub async fn run(listener: TcpListener, shutdown: impl Future) {
     // When the provided `shutdown` future completes, we must send a shutdown
     // message to all active connections. We use a broadcast channel for this
     // purpose. The call below ignores the receiver of the broadcast pair, and when
@@ -140,7 +140,7 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) -> crate::Result<
     // Initialize the listener state
     let mut server = Listener {
         listener,
-        db: Db::new(),
+        db_holder: DbDropGuard::new(),
         limit_connections: Arc::new(Semaphore::new(MAX_CONNECTIONS)),
         notify_shutdown,
         shutdown_complete_tx,
@@ -193,6 +193,7 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) -> crate::Result<
         notify_shutdown,
         ..
     } = server;
+
     // When `notify_shutdown` is dropped, all tasks which have `subscribe`d will
     // receive the shutdown signal and can exit
     drop(notify_shutdown);
@@ -204,8 +205,6 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) -> crate::Result<
     // `Sender` instances are held by connection handler tasks. When those drop,
     // the `mpsc` channel will close and `recv()` will return `None`.
     let _ = shutdown_complete_rx.recv().await;
-
-    Ok(())
 }
 
 impl Listener {
@@ -250,9 +249,8 @@ impl Listener {
 
             // Create the necessary per-connection handler state.
             let mut handler = Handler {
-                // Get a handle to the shared database. Internally, this is an
-                // `Arc`, so a clone only increments the ref count.
-                db: self.db.clone(),
+                // Get a handle to the shared database.
+                db: self.db_holder.db(),
 
                 // Initialize the connection state. This allocates read/write
                 // buffers to perform redis protocol frame parsing.
