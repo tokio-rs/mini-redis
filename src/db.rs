@@ -7,11 +7,11 @@ use std::sync::{Arc, Mutex};
 use tracing::debug;
 
 /// A wrapper around a `Db` instance. This exists to allow orderly cleanup
-/// of the `Db` by signalling the background purge task to shutdown when
+/// of the `Db` by signalling the background purge task to shut down when
 /// this struct is dropped.
 #[derive(Debug)]
-pub(crate) struct DbHolder {
-    /// The `Db` instance that will be shutdown when this `DbHolder` struct
+pub(crate) struct DbDropGuard {
+    /// The `Db` instance that will be shut down when this `DbHolder` struct
     /// is dropped.
     db: Db,
 }
@@ -103,11 +103,11 @@ struct Entry {
     expires_at: Option<Instant>,
 }
 
-impl DbHolder {
+impl DbDropGuard {
     /// Create a new `DbHolder`, wrapping a `Db` instance. When this is dropped
-    /// the `Db`'s purge task will be shutdown.
-    pub(crate) fn new() -> DbHolder {
-        DbHolder { db: Db::new() }
+    /// the `Db`'s purge task will be shut down.
+    pub(crate) fn new() -> DbDropGuard {
+        DbDropGuard { db: Db::new() }
     }
 
     /// Get the shared database. Internally, this is an
@@ -117,9 +117,9 @@ impl DbHolder {
     }
 }
 
-impl Drop for DbHolder {
+impl Drop for DbDropGuard {
     fn drop(&mut self) {
-        // Signal the 'Db' instance to shutdown the task that purges expired keys
+        // Signal the 'Db' instance to shut down the task that purges expired keys
         self.db.shutdown_purge_task();
     }
 }
@@ -277,10 +277,10 @@ impl Db {
             .unwrap_or(0)
     }
 
-    /// Signals the purge background task to shutdown. This is called by the
+    /// Signals the purge background task to shut down. This is called by the
     /// `DbShutdown`s `Drop` implementation.
     fn shutdown_purge_task(&self) {
-        // The background task must be signaled to shutdown. This is done by
+        // The background task must be signaled to shut down. This is done by
         // setting `State::shutdown` to `true` and signalling the task.
         let mut state = self.shared.state.lock().unwrap();
         state.shutdown = true;
@@ -374,5 +374,5 @@ async fn purge_expired_tasks(shared: Arc<Shared>) {
         }
     }
 
-    debug!("Purge background task shutdown")
+    debug!("Purge background task shut down")
 }

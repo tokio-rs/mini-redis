@@ -3,7 +3,7 @@
 //! Provides an async `run` function that listens for inbound connections,
 //! spawning a task per connection.
 
-use crate::{Command, Connection, Db, DbHolder, Shutdown};
+use crate::{Command, Connection, Db, DbDropGuard, Shutdown};
 
 use std::future::Future;
 use std::sync::Arc;
@@ -23,7 +23,7 @@ struct Listener {
     ///
     /// This holds a wrapper around an `Arc`. The internal `Db` can be
     /// retrieved and passed into the per connection state (`Handler`).
-    db_holder: DbHolder,
+    db_holder: DbDropGuard,
 
     /// TCP listener supplied by the `run` caller.
     listener: TcpListener,
@@ -140,7 +140,7 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) {
     // Initialize the listener state
     let mut server = Listener {
         listener,
-        db_holder: DbHolder::new(),
+        db_holder: DbDropGuard::new(),
         limit_connections: Arc::new(Semaphore::new(MAX_CONNECTIONS)),
         notify_shutdown,
         shutdown_complete_tx,
