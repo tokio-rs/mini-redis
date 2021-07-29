@@ -187,7 +187,7 @@ impl Db {
             // to update its state.
             notify = state
                 .next_expiration()
-                .map(|expiration| expiration > when)
+                .map(|expiration| expiration.0 > when)
                 .unwrap_or(true);
 
             // Track the expiration.
@@ -340,11 +340,8 @@ impl Shared {
 }
 
 impl State {
-    fn next_expiration(&self) -> Option<Instant> {
-        self.expirations
-            .keys()
-            .next()
-            .map(|expiration| expiration.0)
+    fn next_expiration(&self) -> Option<&(Instant, u64)> {
+        self.expirations.keys().next().map(|expiration| expiration)
     }
 }
 
