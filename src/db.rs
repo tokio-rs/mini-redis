@@ -212,6 +212,13 @@ impl Db {
             if let Some(when) = prev.expires_at {
                 // clear expiration
                 state.expirations.remove(&(when, prev.id));
+                // also notify the worker if the previous entry was
+                // the reason for wakeup
+                notify = notify
+                    || state
+                        .next_expiration()
+                        .map(|expiration| expiration == &(when, prev.id))
+                        .unwrap_or(notify);
             }
         }
 
