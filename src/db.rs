@@ -347,8 +347,8 @@ impl Shared {
 }
 
 impl State {
-    fn next_expiration(&self) -> Option<&(Instant, u64)> {
-        self.expirations.keys().next().map(|expiration| expiration)
+    fn next_expiration(&self) -> Option<(Instant, u64)> {
+        self.expirations.keys().next().copied()
     }
 }
 
