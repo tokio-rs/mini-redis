@@ -231,8 +231,16 @@ impl Listener {
         std::thread::spawn(move || {
             for sample in m.sample() {
                 if sample.num_scheduled > 0 {
-                    println!("num_scheduled = {}; total_scheduled = {:?}", sample.num_scheduled, sample.total_scheduled_duration);
-                    println!("mean = {:?}", sample.mean_scheduled_duration());                
+                    println!("Tick:");
+                    println!("  sample: {:?}", sample);
+                    println!(
+                        "  mean time to first poll: {:?}",
+                        sample.mean_time_to_first_poll()
+                    );
+                    println!("  mean scheduled = {:?}", sample.mean_time_scheduled());
+                    println!("  mean fast poll = {:?}", sample.mean_fast_polls());
+                    println!("  mean slow poll = {:?}", sample.mean_slow_polls());
+                    println!("  fast poll % = {:?}", sample.fast_poll_ratio());
                 }
                 std::thread::sleep(std::time::Duration::from_millis(100));
             }
