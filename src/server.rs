@@ -226,6 +226,18 @@ impl Listener {
     async fn run(&mut self) -> crate::Result<()> {
         info!("accepting inbound connections");
 
+        let metrics = std::sync::Arc::new(tokio_metrics::TaskMetrics::new());
+        let m = metrics.clone();
+        std::thread::spawn(move || {
+            for sample in m.sample() {
+                if sample.num_scheduled > 0 {
+                    println!("num_scheduled = {}; total_scheduled = {:?}", sample.num_scheduled, sample.total_scheduled_duration);
+                    println!("mean = {:?}", sample.mean_scheduled_duration());                
+                }
+                std::thread::sleep(std::time::Duration::from_millis(100));
+            }
+        });
+
         loop {
             // Wait for a permit to become available
             //
@@ -271,12 +283,12 @@ impl Listener {
 
             // Spawn a new task to process the connections. Tokio tasks are like
             // asynchronous green threads and are executed concurrently.
-            tokio::spawn(async move {
+            tokio::spawn(metrics.instrument(async move {
                 // Process the connection. If an error is encountered, log it.
                 if let Err(err) = handler.run().await {
                     error!(cause = ?err, "connection error");
                 }
-            });
+            }));
         }
     }
 
