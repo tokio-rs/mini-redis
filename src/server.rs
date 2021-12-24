@@ -228,8 +228,14 @@ impl Listener {
 
         let metrics = std::sync::Arc::new(tokio_metrics::TaskMetrics::new());
         let m = metrics.clone();
-        std::thread::spawn(move || {
+        tokio::spawn(async move {
+            // Poll the runtime metrics
+            let rt = tokio_metrics::RuntimeMetrics::new(&tokio::runtime::Handle::current());
+            let mut rt_sample = rt.sample();
+
             for sample in m.sample() {
+                let rt = rt_sample.next().unwrap();
+
                 if sample.num_scheduled > 0 {
                     println!("Tick:");
                     println!("  sample: {:?}", sample);
@@ -241,8 +247,15 @@ impl Listener {
                     println!("  mean fast poll = {:?}", sample.mean_fast_polls());
                     println!("  mean slow poll = {:?}", sample.mean_slow_polls());
                     println!("  fast poll % = {:?}", sample.fast_poll_ratio());
-                }
-                std::thread::sleep(std::time::Duration::from_millis(100));
+                    // Runtime stats
+                    println!("  === runtime ===");
+                    println!("  mean polls per tick = {}", rt.mean_polls_per_park());
+                    println!("  busy ratio = {}", rt.busy_ratio());
+                    println!("  num parks = {}", rt.num_parks);
+                    println!("  num steals = {}", rt.num_steals);
+                    println!("  ? = {:?}", rt);
+                }             
+                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
             }
         });
 
