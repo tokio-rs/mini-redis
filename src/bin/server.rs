@@ -12,7 +12,7 @@ use structopt::StructOpt;
 use tokio::net::TcpListener;
 use tokio::signal;
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 pub async fn main() -> mini_redis::Result<()> {
     // enable logging
     // see https://docs.rs/tracing for more info

@@ -237,7 +237,7 @@ impl Listener {
                 let rt = rt_sample.next().unwrap();
 
                 if sample.num_scheduled > 0 {
-                    println!("Tick:");
+                    println!("\n\n### Tick:");
                     println!("  sample: {:?}", sample);
                     println!(
                         "  mean time to first poll: {:?}",
@@ -248,10 +248,11 @@ impl Listener {
                     println!("  mean slow poll = {:?}", sample.mean_slow_polls());
                     println!("  fast poll % = {:?}", sample.fast_poll_ratio());
                     // Runtime stats
-                    println!("  === runtime ===");
+                    println!("  ~ runtime ~ ");
                     println!("  mean polls per tick = {}", rt.mean_polls_per_park());
                     println!("  busy ratio = {}", rt.busy_ratio());
                     println!("  num parks = {}", rt.num_parks);
+                    println!("  max parks = {}", rt.max_parks);
                     println!("  num steals = {}", rt.num_steals);
                     println!("  ? = {:?}", rt);
                 }             
