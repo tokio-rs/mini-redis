@@ -15,9 +15,9 @@ pub struct Ping {
 
 impl Ping {
     /// Create a new `Ping` command with optional `msg`.
-    pub fn new(msg: Option<impl ToString>) -> Ping {
+    pub fn new(msg: Option<String>) -> Ping {
         Ping {
-            msg: msg.map(|m| m.to_string()),
+            msg,
         }
     }
 
