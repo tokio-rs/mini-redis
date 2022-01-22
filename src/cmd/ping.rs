@@ -60,7 +60,6 @@ impl Ping {
             Some(msg) => Frame::Bulk(Bytes::from(msg)),
         };
 
-        debug!(?response);
 
         // Write the response back to the client
         dst.write_frame(&response).await?;
