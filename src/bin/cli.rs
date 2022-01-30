@@ -39,6 +39,20 @@ enum Command {
         #[structopt(parse(try_from_str = duration_from_ms_str))]
         expires: Option<Duration>,
     },
+    ///  Publisher to send a message to a specific channel.
+    Publish {
+        /// Name of channel
+        channel: String,
+
+        #[structopt(parse(from_str = bytes_from_str))]
+        /// Message to publish
+        message: Bytes,
+    },
+    /// Subscribe a client to a specific channel or channels.
+    Subscribe {
+        /// Specific channel or channels
+        channels: Vec<String>,
+    },
 }
 
 /// Entry point for CLI tool.
@@ -92,6 +106,24 @@ async fn main() -> mini_redis::Result<()> {
         } => {
             client.set_expires(&key, value, expires).await?;
             println!("OK");
+        }
+        Command::Publish { channel, message } => {
+            client.publish(&channel, message.into()).await?;
+            println!("Publish OK");
+        }
+        Command::Subscribe { channels } => {
+            if channels.is_empty() {
+                return Err("channel(s) must be provided".into());
+            }
+            let mut subscriber = client.subscribe(channels).await?;
+
+            // await messages on channels
+            while let Some(msg) = subscriber.next_message().await? {
+                println!(
+                    "got message from the channel: {}; message = {:?}",
+                    msg.channel, msg.content
+                );
+            }
         }
     }
 
