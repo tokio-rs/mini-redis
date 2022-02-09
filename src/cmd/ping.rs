@@ -1,6 +1,6 @@
 use crate::{Connection, Frame, Parse, ParseError};
 use bytes::Bytes;
-use tracing::{instrument};
+use tracing::instrument;
 
 /// Returns PONG if no argument is provided, otherwise
 /// return a copy of the argument as a bulk.
