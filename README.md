@@ -59,6 +59,18 @@ cargo run --bin mini-redis-cli set foo bar
 cargo run --bin mini-redis-cli get foo
 ```
 
+### AWS Xray integration (via OpenTelemetry)
+To enable sending traces to Xray, use the `xray` feature:
+```
+RUST_LOG=debug cargo run --bin mini-redis-server --features xray
+```
+
+This will switch `tracing` to use `tracing-opentelemetry`. You will need to
+have a copy of AWSOtelCollector running on the same host.
+
+For demo purposes, you can follow the setup documented at
+https://github.com/aws-observability/aws-otel-collector/blob/main/docs/developers/docker-demo.md#run-a-single-aws-otel-collector-instance-in-docker
+
 ## Supported commands
 
 `mini-redis` currently supports the following commands.
