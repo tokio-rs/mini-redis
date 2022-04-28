@@ -1,9 +1,11 @@
 use crate::frame::{self, Frame};
 
 use bytes::{Buf, BytesMut};
-use std::io::{self, Cursor};
+use std::io::{self, Cursor, ErrorKind::ConnectionReset};
+use std::net::SocketAddr;
 use tokio::io::{AsyncReadExt, AsyncWriteExt, BufWriter};
 use tokio::net::TcpStream;
+use tracing::warn;
 
 /// Send and receive `Frame` values from a remote peer.
 ///
@@ -28,6 +30,16 @@ pub struct Connection {
     buffer: BytesMut,
 }
 
+/// The result of [`Connection::maybe_read_bytes`].
+enum ConnectionState {
+    /// The connection was gracefully closed when reading was attempted.
+    Closed,
+    /// The connection was open when reading was attempted.
+    Open,
+    /// The connection was abruptly reset by the peer when reading was attempted.
+    Reset,
+}
+
 impl Connection {
     /// Create a new `Connection`, backed by `socket`. Read and write buffers
     /// are initialized.
@@ -40,6 +52,11 @@ impl Connection {
             // a larger read buffer will work better.
             buffer: BytesMut::with_capacity(4 * 1024),
         }
+    }
+
+    /// Returns the remote address that this connection is bound to.
+    pub fn peer_addr(&self) -> io::Result<SocketAddr> {
+        self.stream.get_ref().peer_addr()
     }
 
     /// Read a single `Frame` value from the underlying stream.
@@ -63,20 +80,37 @@ impl Connection {
 
             // There is not enough buffered data to read a frame. Attempt to
             // read more data from the socket.
-            //
-            // On success, the number of bytes is returned. `0` indicates "end
-            // of stream".
-            if 0 == self.stream.read_buf(&mut self.buffer).await? {
-                // The remote closed the connection. For this to be a clean
-                // shutdown, there should be no data in the read buffer. If
-                // there is, this means that the peer closed the socket while
-                // sending a frame.
-                if self.buffer.is_empty() {
+            match self.maybe_read_bytes().await? {
+                ConnectionState::Open => continue,
+                ConnectionState::Closed | ConnectionState::Reset => {
+                    if !self.buffer.is_empty() {
+                        warn! {
+                            incomplete =? self.buffer,
+                            "connection closed with incomplete frame"
+                        };
+                    }
                     return Ok(None);
-                } else {
-                    return Err("connection reset by peer".into());
                 }
             }
+        }
+    }
+
+    /// Attempt to read bytes from the connection.
+    async fn maybe_read_bytes(&mut self) -> io::Result<ConnectionState> {
+        match self.stream.read_buf(&mut self.buffer).await {
+            // the connection was closed gracefully
+            Ok(0) => Ok(ConnectionState::Closed),
+            // the connection is still open
+            Ok(_) => Ok(ConnectionState::Open),
+            // the connection was closed abruptly by the peer
+            Err(e) if e.kind() == ConnectionReset => {
+                warn! {
+                    "connection closed abruptly by peer"
+                };
+                Ok(ConnectionState::Reset)
+            }
+            // reading failed for some other reason
+            Err(err) => Err(err),
         }
     }
 

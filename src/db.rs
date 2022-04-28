@@ -4,7 +4,7 @@ use tokio::time::{self, Duration, Instant};
 use bytes::Bytes;
 use std::collections::{BTreeMap, HashMap};
 use std::sync::{Arc, Mutex};
-use tracing::debug;
+use tracing::{debug, instrument};
 
 /// A wrapper around a `Db` instance. This exists to allow orderly cleanup
 /// of the `Db` by signalling the background purge task to shut down when
@@ -150,6 +150,7 @@ impl Db {
     /// Returns `None` if there is no value associated with the key. This may be
     /// due to never having assigned a value to the key or a previously assigned
     /// value expired.
+    #[instrument(level = "trace", name = "Db::get", skip(self))]
     pub(crate) fn get(&self, key: &str) -> Option<Bytes> {
         // Acquire the lock, get the entry and clone the value.
         //
@@ -163,6 +164,7 @@ impl Db {
     /// Duration.
     ///
     /// If a value is already associated with the key, it is removed.
+    #[instrument(level = "trace", name = "Db::set", skip(self, value))]
     pub(crate) fn set(&self, key: String, value: Bytes, expire: Option<Duration>) {
         let mut state = self.shared.state.lock().unwrap();
 
@@ -231,6 +233,7 @@ impl Db {
     ///
     /// The returned `Receiver` is used to receive values broadcast by `PUBLISH`
     /// commands.
+    #[instrument(level = "trace", name = "Db::subscribe", skip(self, key))]
     pub(crate) fn subscribe(&self, key: String) -> broadcast::Receiver<Bytes> {
         use std::collections::hash_map::Entry;
 
@@ -262,6 +265,7 @@ impl Db {
 
     /// Publish a message to the channel. Returns the number of subscribers
     /// listening on the channel.
+    #[instrument(level = "trace", name = "Db::publish", skip(self, value))]
     pub(crate) fn publish(&self, key: &str, value: Bytes) -> usize {
         let state = self.shared.state.lock().unwrap();
 
@@ -279,6 +283,7 @@ impl Db {
 
     /// Signals the purge background task to shut down. This is called by the
     /// `DbShutdown`s `Drop` implementation.
+    #[instrument(name = "Db::shutdown_purge_task", skip(self))]
     fn shutdown_purge_task(&self) {
         // The background task must be signaled to shut down. This is done by
         // setting `State::shutdown` to `true` and signalling the task.
@@ -296,6 +301,7 @@ impl Db {
 impl Shared {
     /// Purge all expired keys and return the `Instant` at which the **next**
     /// key will expire. The background task will sleep until this instant.
+    #[instrument(name = "Shared::purge_expired_keys", skip(self))]
     fn purge_expired_keys(&self) -> Option<Instant> {
         let mut state = self.state.lock().unwrap();
 
@@ -323,6 +329,10 @@ impl Shared {
             }
 
             // The key expired, remove it
+            debug! {
+                key = &key.as_str(),
+                "purged_expired_key",
+            }
             state.entries.remove(key);
             state.expirations.remove(&(when, id));
         }
@@ -352,6 +362,7 @@ impl State {
 ///
 /// Wait to be notified. On notification, purge any expired keys from the shared
 /// state handle. If `shutdown` is set, terminate the task.
+#[instrument(skip(shared))]
 async fn purge_expired_tasks(shared: Arc<Shared>) {
     // If the shutdown flag is set, then the task should exit.
     while !shared.is_shutdown() {

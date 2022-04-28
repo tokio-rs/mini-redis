@@ -39,6 +39,7 @@ impl Ping {
     /// ```text
     /// PING [message]
     /// ```
+    #[instrument(level = "trace", name = "Ping::parse_frames", skip(parse))]
     pub(crate) fn parse_frames(parse: &mut Parse) -> crate::Result<Ping> {
         match parse.next_string() {
             Ok(msg) => Ok(Ping::new(Some(msg))),
@@ -51,7 +52,13 @@ impl Ping {
     ///
     /// The response is written to `dst`. This is called by the server in order
     /// to execute a received command.
-    #[instrument(skip(self, dst))]
+    #[instrument(
+        name = "Ping::apply",
+        skip(self, dst),
+        fields(
+            ?msg = self.msg,
+        ),
+    )]
     pub(crate) async fn apply(self, dst: &mut Connection) -> crate::Result<()> {
         let response = match self.msg {
             None => Frame::Simple("PONG".to_string()),

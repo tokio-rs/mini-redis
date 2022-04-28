@@ -17,6 +17,7 @@ mod unknown;
 pub use unknown::Unknown;
 
 use crate::{Connection, Db, Frame, Parse, ParseError, Shutdown};
+use tracing::instrument;
 
 /// Enumeration of supported Redis commands.
 ///
@@ -41,6 +42,7 @@ impl Command {
     /// # Returns
     ///
     /// On success, the command value is returned, otherwise, `Err` is returned.
+    #[instrument(level = "trace", name = "Command::from_frame", skip(frame), err)]
     pub fn from_frame(frame: Frame) -> crate::Result<Command> {
         // The frame  value is decorated with `Parse`. `Parse` provides a
         // "cursor" like API which makes parsing the command easier.
@@ -87,6 +89,12 @@ impl Command {
     ///
     /// The response is written to `dst`. This is called by the server in order
     /// to execute a received command.
+    #[instrument(
+        level = "trace",
+        name = "Command::apply",
+        skip(self, db, dst, shutdown),
+        err
+    )]
     pub(crate) async fn apply(
         self,
         db: &Db,

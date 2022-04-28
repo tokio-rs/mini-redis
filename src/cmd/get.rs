@@ -47,6 +47,7 @@ impl Get {
     /// ```text
     /// GET key
     /// ```
+    #[instrument(level = "trace", name = "Get::parse_frames", skip(parse))]
     pub(crate) fn parse_frames(parse: &mut Parse) -> crate::Result<Get> {
         // The `GET` string has already been consumed. The next value is the
         // name of the key to get. If the next value is not a string or the
@@ -60,7 +61,14 @@ impl Get {
     ///
     /// The response is written to `dst`. This is called by the server in order
     /// to execute a received command.
-    #[instrument(skip(self, db, dst))]
+    #[instrument(
+        level = "trace",
+        name = "Get::apply",
+        skip(self, db, dst),
+        fields(
+            key = self.key.as_str(),
+        ),
+    )]
     pub(crate) async fn apply(self, db: &Db, dst: &mut Connection) -> crate::Result<()> {
         // Get the value from the shared database state
         let response = if let Some(value) = db.get(&self.key) {

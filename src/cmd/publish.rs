@@ -1,6 +1,7 @@
 use crate::{Connection, Db, Frame, Parse};
 
 use bytes::Bytes;
+use tracing::instrument;
 
 /// Posts a message to the given channel.
 ///
@@ -47,6 +48,7 @@ impl Publish {
     /// ```text
     /// PUBLISH channel message
     /// ```
+    #[instrument(level = "trace", name = "Publish::parse_frames", skip(parse))]
     pub(crate) fn parse_frames(parse: &mut Parse) -> crate::Result<Publish> {
         // The `PUBLISH` string has already been consumed. Extract the `channel`
         // and `message` values from the frame.
@@ -64,6 +66,14 @@ impl Publish {
     ///
     /// The response is written to `dst`. This is called by the server in order
     /// to execute a received command.
+    #[instrument(
+        level = "trace",
+        name = "Publish::apply",
+        skip(self, db, dst),
+        fields(
+            channel = self.channel.as_str(),
+        ),
+    )]
     pub(crate) async fn apply(self, db: &Db, dst: &mut Connection) -> crate::Result<()> {
         // The shared state contains the `tokio::sync::broadcast::Sender` for
         // all active channels. Calling `db.publish` dispatches the message into

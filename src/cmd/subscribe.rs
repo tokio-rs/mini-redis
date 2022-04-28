@@ -6,6 +6,7 @@ use std::pin::Pin;
 use tokio::select;
 use tokio::sync::broadcast;
 use tokio_stream::{Stream, StreamExt, StreamMap};
+use tracing::instrument;
 
 /// Subscribes the client to one or more channels.
 ///
@@ -60,6 +61,7 @@ impl Subscribe {
     /// ```text
     /// SUBSCRIBE channel [channel ...]
     /// ```
+    #[instrument(level = "trace", name = "Subscribe::parse_frames", skip(parse))]
     pub(crate) fn parse_frames(parse: &mut Parse) -> crate::Result<Subscribe> {
         use ParseError::EndOfStream;
 
@@ -99,6 +101,14 @@ impl Subscribe {
     /// are updated accordingly.
     ///
     /// [here]: https://redis.io/topics/pubsub
+    #[instrument(
+        level = "trace",
+        name = "Suscribe::apply",
+        skip(self, db, dst),
+        fields(
+            channels = "UNIMPLEMENTED", // FIXME
+        ),
+    )]
     pub(crate) async fn apply(
         mut self,
         db: &Db,
