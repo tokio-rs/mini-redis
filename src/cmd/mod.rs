@@ -53,8 +53,10 @@ impl Command {
 
         // All redis commands begin with the command name as a string. The name
         // is read and converted to lower cases in order to do case sensitive
-        // matching.
-        let command_name = parse.next_string()?.to_lowercase();
+        // matching. Doing this in-place with `str::make_ascii_lowercase` is
+        // substantially more performant than `str::to_lowercase`.
+        let mut command_name = parse.next_string()?;
+        command_name.make_ascii_lowercase();
 
         // Match the command name, delegating the rest of the parsing to the
         // specific command.
