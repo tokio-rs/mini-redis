@@ -62,7 +62,7 @@ impl Subscribe {
     /// SUBSCRIBE channel [channel ...]
     /// ```
     #[instrument(level = "trace", name = "Subscribe::parse_frames", skip(parse))]
-    pub(crate) fn parse_frames(parse: &mut Parse) -> crate::Result<Subscribe> {
+    pub(crate) fn parse_frames(parse: &mut Parse) -> Result<Self, ParseError> {
         use ParseError::EndOfStream;
 
         // The `SUBSCRIBE` string has already been consumed. At this point,

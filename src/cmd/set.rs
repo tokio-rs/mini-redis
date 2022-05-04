@@ -78,7 +78,7 @@ impl Set {
     /// SET key value [EX seconds|PX milliseconds]
     /// ```
     #[instrument(level = "trace", name = "Set::parse_frames", skip(parse))]
-    pub(crate) fn parse_frames(parse: &mut Parse) -> crate::Result<Set> {
+    pub(crate) fn parse_frames(parse: &mut Parse) -> Result<Self, ParseError> {
         use ParseError::EndOfStream;
 
         // Read the key to set. This is a required field

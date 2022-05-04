@@ -1,4 +1,4 @@
-use crate::{Connection, Db, Frame, Parse};
+use crate::{Connection, Db, Frame, Parse, ParseError};
 
 use bytes::Bytes;
 use tracing::instrument;
@@ -49,7 +49,7 @@ impl Publish {
     /// PUBLISH channel message
     /// ```
     #[instrument(level = "trace", name = "Publish::parse_frames", skip(parse))]
-    pub(crate) fn parse_frames(parse: &mut Parse) -> crate::Result<Publish> {
+    pub(crate) fn parse_frames(parse: &mut Parse) -> Result<Self, ParseError> {
         // The `PUBLISH` string has already been consumed. Extract the `channel`
         // and `message` values from the frame.
         //

@@ -11,7 +11,7 @@ use std::sync::Arc;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::{broadcast, mpsc, Semaphore};
 use tokio::time::{self, Duration};
-use tracing::{debug, error, info, instrument};
+use tracing::{error, info, instrument, warn};
 
 /// Server listener state. Created in the `run` call. It includes a `run` method
 /// which performs the TCP listening and initialization of per-connection state.
@@ -340,7 +340,7 @@ impl Handler {
     }
 
     /// Process a single connection.
-    #[instrument(level = "debug", name = "Handler::process_frame", skip(self), err)]
+    #[instrument(level = "debug", name = "Handler::process_frame", skip(self))]
     async fn process_frame(&mut self) -> crate::Result<ControlFlow<(), ()>> {
         // While reading a request frame, also listen for the shutdown
         // signal.
@@ -361,23 +361,31 @@ impl Handler {
             None => return Ok(ControlFlow::Break(())),
         };
 
-        debug!(?frame);
-
         // Convert the redis frame into a command struct. This returns an
-        // error if the frame is not a valid redis command or it is an
-        // unsupported command.
-        let cmd = Command::from_frame(frame)?;
-
-        // Logs the `cmd` object. The syntax here is a shorthand provided by
-        // the `tracing` crate. It can be thought of as similar to:
-        //
-        // ```
-        // debug!(cmd = format!("{:?}", cmd));
-        // ```
-        //
-        // `tracing` provides structured logging, so information is "logged"
-        // as key-value pairs.
-        debug!(?cmd);
+        // error if the frame is not a valid redis command.
+        let cmd = match Command::from_frame(frame) {
+            Ok(cmd) => cmd,
+            Err(cause) => {
+                // The frame was malformed and could not be parsed. This is
+                // probably indicative of an issue with the client (as opposed
+                // to our server), so we (1) emit a warning...
+                //
+                // The syntax here is a shorthand provided by the `tracing`
+                // crate. It can be thought of as similar to:
+                //      warn! {
+                //          cause = format!("{}", cause),
+                //          "failed to parse command from frame"
+                //      };
+                // `tracing` provides structured logging, so information is
+                // "logged" as key-value pairs.
+                warn! {
+                    %cause,
+                    "failed to parse command from frame"
+                };
+                // ...and (2) respond to the client with the error:
+                Command::from_error(cause)
+            }
+        };
 
         // Perform the work needed to apply the command. This may mutate the
         // database state as a result.

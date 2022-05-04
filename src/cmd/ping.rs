@@ -40,7 +40,7 @@ impl Ping {
     /// PING [message]
     /// ```
     #[instrument(level = "trace", name = "Ping::parse_frames", skip(parse))]
-    pub(crate) fn parse_frames(parse: &mut Parse) -> crate::Result<Ping> {
+    pub(crate) fn parse_frames(parse: &mut Parse) -> Result<Self, ParseError> {
         match parse.next_string() {
             Ok(msg) => Ok(Ping::new(Some(msg))),
             Err(ParseError::EndOfStream) => Ok(Ping::default()),

@@ -16,6 +16,9 @@ pub use ping::Ping;
 mod unknown;
 pub use unknown::Unknown;
 
+mod invalid;
+pub use invalid::Invalid;
+
 use crate::{Connection, Db, Frame, Parse, ParseError, Shutdown};
 use tracing::instrument;
 
@@ -31,6 +34,7 @@ pub enum Command {
     Unsubscribe(Unsubscribe),
     Ping(Ping),
     Unknown(Unknown),
+    Invalid(Invalid),
 }
 
 impl Command {
@@ -42,8 +46,13 @@ impl Command {
     /// # Returns
     ///
     /// On success, the command value is returned, otherwise, `Err` is returned.
-    #[instrument(level = "trace", name = "Command::from_frame", skip(frame), err)]
-    pub fn from_frame(frame: Frame) -> crate::Result<Command> {
+    ///
+    /// # Traces
+    ///
+    /// Generates a TRACE-level span named `Command::from_frame` that includes
+    /// the `Debug`-representation of `frame` as a field.
+    #[instrument(level = "trace", name = "Command::from_frame")]
+    pub fn from_frame(frame: Frame) -> Result<Command, ParseError> {
         // The frame  value is decorated with `Parse`. `Parse` provides a
         // "cursor" like API which makes parsing the command easier.
         //
@@ -87,16 +96,21 @@ impl Command {
         Ok(command)
     }
 
+    /// Construct an `Invalid` response command from a `ParseError`.
+    pub(crate) fn from_error(err: ParseError) -> Command {
+        Command::Invalid(invalid::Invalid::new(err))
+    }
+
     /// Apply the command to the specified `Db` instance.
     ///
     /// The response is written to `dst`. This is called by the server in order
     /// to execute a received command.
-    #[instrument(
-        level = "trace",
-        name = "Command::apply",
-        skip(self, db, dst, shutdown),
-        err
-    )]
+    ///
+    /// # Traces
+    ///
+    /// Generates a `TRACE`-level span that includes the `Debug`-serializaiton
+    /// of `self` (the `Command` being applied) as a field.
+    #[instrument(level = "trace", name = "Command::apply", skip(db, dst, shutdown))]
     pub(crate) async fn apply(
         self,
         db: &Db,
@@ -112,9 +126,10 @@ impl Command {
             Subscribe(cmd) => cmd.apply(db, dst, shutdown).await,
             Ping(cmd) => cmd.apply(dst).await,
             Unknown(cmd) => cmd.apply(dst).await,
+            Invalid(cmd) => cmd.apply(dst).await,
             // `Unsubscribe` cannot be applied. It may only be received from the
             // context of a `Subscribe` command.
-            Unsubscribe(_) => Err("`Unsubscribe` is unsupported in this context".into()),
+            Unsubscribe(_) => Result::Err("`Unsubscribe` is unsupported in this context".into()),
         }
     }
 
@@ -128,6 +143,7 @@ impl Command {
             Command::Unsubscribe(_) => "unsubscribe",
             Command::Ping(_) => "ping",
             Command::Unknown(cmd) => cmd.get_name(),
+            Command::Invalid(_) => "err",
         }
     }
 }

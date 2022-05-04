@@ -1,4 +1,4 @@
-use crate::{Connection, Db, Frame, Parse};
+use crate::{Connection, Db, Frame, Parse, ParseError};
 
 use bytes::Bytes;
 use tracing::{debug, instrument};
@@ -48,7 +48,7 @@ impl Get {
     /// GET key
     /// ```
     #[instrument(level = "trace", name = "Get::parse_frames", skip(parse))]
-    pub(crate) fn parse_frames(parse: &mut Parse) -> crate::Result<Get> {
+    pub(crate) fn parse_frames(parse: &mut Parse) -> Result<Self, ParseError> {
         // The `GET` string has already been consumed. The next value is the
         // name of the key to get. If the next value is not a string or the
         // input is fully consumed, then an error is returned.
