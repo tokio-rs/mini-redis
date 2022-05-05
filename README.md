@@ -59,8 +59,21 @@ cargo run --bin mini-redis-cli set foo bar
 cargo run --bin mini-redis-cli get foo
 ```
 
-### AWS Xray integration (via OpenTelemetry)
-To enable sending traces to Xray, use the `xray` feature:
+## OpenTelemetry
+
+If you are running many instances of your application (which is usually the case
+when you are developing a cloud service, for example), you need a way to get all
+of your trace data out of your host and into a centralized place. There are many
+options here, such as Prometheus, Jaeger, DataDog, Honeycomb, AWS X-Ray etc.
+
+We leverage OpenTelemetry, because it's an open standard that allows for a
+single data format to be used for all the options mentioned above (and more).
+This eliminates the risk of vendor lock-in, since you can switch between
+providers if needed.
+
+### AWS X-Ray example
+
+To enable sending traces to X-Ray, use the `xray` feature:
 ```
 RUST_LOG=debug cargo run --bin mini-redis-server --features xray
 ```
