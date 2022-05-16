@@ -73,9 +73,9 @@ providers if needed.
 
 ### AWS X-Ray example
 
-To enable sending traces to X-Ray, use the `xray` feature:
+To enable sending traces to X-Ray, use the `otel` feature:
 ```
-RUST_LOG=debug cargo run --bin mini-redis-server --features xray
+RUST_LOG=debug cargo run --bin mini-redis-server --features otel
 ```
 
 This will switch `tracing` to use `tracing-opentelemetry`. You will need to

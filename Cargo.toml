@@ -44,4 +44,4 @@ opentelemetry-otlp = { version = "0.10.0", optional = true }
 tokio = { version = "1", features = ["test-util"] }
 
 [features]
-xray = ["dep:opentelemetry", "dep:tracing-opentelemetry", "dep:opentelemetry-aws", "dep:opentelemetry-otlp"]
+otel = ["dep:opentelemetry", "dep:tracing-opentelemetry", "dep:opentelemetry-aws", "dep:opentelemetry-otlp"]
