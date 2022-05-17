@@ -8,11 +8,14 @@
 
 use mini_redis::{server, DEFAULT_PORT};
 
-use opentelemetry_aws::trace::XrayPropagator;
+
 use structopt::StructOpt;
 use tokio::net::TcpListener;
 use tokio::signal;
 
+#[cfg(feature = "otel")]
+// For passing along the same XrayId across services
+use opentelemetry_aws::trace::XrayPropagator;
 #[cfg(feature = "otel")]
 // To be able to set the XrayPropagator
 use opentelemetry::global;
