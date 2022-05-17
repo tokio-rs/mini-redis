@@ -22,3 +22,19 @@ jobs:
       with:
         command: fmt
         args: --all -- --check
+
+  build-otel:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build
+      run: cargo build --verbose --features otel
+    - name: Run tests
+      run: cargo test --verbose --features otel
+    - name: rustfmt
+      uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: --all -- --check

@@ -13,15 +13,15 @@ use structopt::StructOpt;
 use tokio::net::TcpListener;
 use tokio::signal;
 
-#[cfg(feature = "xray")]
+#[cfg(feature = "otel")]
 // To be able to set the XrayPropagator
 use opentelemetry::global;
-#[cfg(feature = "xray")]
+#[cfg(feature = "otel")]
 // To configure certain options such as sampling rate
 use opentelemetry::sdk::trace as sdktrace;
-#[cfg(feature = "xray")]
+#[cfg(feature = "otel")]
 // To be able to pass along the XrayId across services
-#[cfg(feature = "xray")]
+#[cfg(feature = "otel")]
 // The `Ext` traits are to allow the Registry to accept the
 // OpenTelemetry-specific types (such as `OpenTelemetryLayer`)
 use tracing_subscriber::{
@@ -50,13 +50,13 @@ struct Cli {
     port: Option<String>,
 }
 
-#[cfg(not(feature = "xray"))]
+#[cfg(not(feature = "otel"))]
 fn set_up_logging() -> mini_redis::Result<()> {
     // See https://docs.rs/tracing for more info
     tracing_subscriber::fmt::try_init()
 }
 
-#[cfg(feature = "xray")]
+#[cfg(feature = "otel")]
 fn set_up_logging() -> Result<(), TryInitError> {
     // Set the global propagator to X-Ray propagator
     // Note: If you need to pass the x-amzn-trace-id across services in the same trace,
