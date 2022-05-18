@@ -15,8 +15,12 @@ jobs:
     - uses: actions/checkout@v2
     - name: Build
       run: cargo build --verbose
+    - name: Build with OTel feature
+      run: cargo build --verbose --features otel
     - name: Run tests
       run: cargo test --verbose
+    - name: Run tests with OTel feature
+      run: cargo test --verbose --features otel
     - name: rustfmt
       uses: actions-rs/cargo@v1
       with:
