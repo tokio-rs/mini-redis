@@ -22,8 +22,6 @@ use opentelemetry::sdk::trace as sdktrace;
 // For passing along the same XrayId across services
 use opentelemetry_aws::trace::XrayPropagator;
 #[cfg(feature = "otel")]
-// To be able to pass along the XrayId across services
-#[cfg(feature = "otel")]
 // The `Ext` traits are to allow the Registry to accept the
 // OpenTelemetry-specific types (such as `OpenTelemetryLayer`)
 use tracing_subscriber::{
