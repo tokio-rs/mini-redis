@@ -266,7 +266,7 @@ impl Listener {
                 }
                 // Move the permit into the task and drop it after completion.
                 // This returns the permit back to the semaphore.
-                drop(permit)
+                drop(permit);
             });
         }
     }
