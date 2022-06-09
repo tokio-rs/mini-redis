@@ -33,7 +33,7 @@ pub async fn main() -> mini_redis::Result<()> {
     set_up_logging()?;
 
     let cli = Cli::parse();
-    let port = cli.port.as_deref().unwrap_or(DEFAULT_PORT);
+    let port = cli.port.unwrap_or(DEFAULT_PORT);
 
     // Bind a TCP listener
     let listener = TcpListener::bind(&format!("127.0.0.1:{}", port)).await?;
@@ -47,7 +47,7 @@ pub async fn main() -> mini_redis::Result<()> {
 #[clap(name = "mini-redis-server", version, author, about = "A Redis server")]
 struct Cli {
     #[clap(name = "port", long = "--port")]
-    port: Option<String>,
+    port: Option<u16>,
 }
 
 #[cfg(not(feature = "otel"))]

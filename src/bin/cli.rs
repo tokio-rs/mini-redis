@@ -20,8 +20,8 @@ struct Cli {
     #[clap(name = "hostname", long = "--host", default_value = "127.0.0.1")]
     host: String,
 
-    #[clap(name = "port", long = "--port", default_value = DEFAULT_PORT)]
-    port: String,
+    #[clap(name = "port", long = "--port", default_value_t = DEFAULT_PORT)]
+    port: u16,
 }
 
 #[derive(Subcommand, Debug)]
