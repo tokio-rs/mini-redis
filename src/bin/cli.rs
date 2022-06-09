@@ -17,10 +17,10 @@ struct Cli {
     #[clap(subcommand)]
     command: Command,
 
-    #[clap(name = "hostname", long = "--host", default_value = "127.0.0.1")]
+    #[clap(name = "hostname", long, default_value = "127.0.0.1")]
     host: String,
 
-    #[clap(name = "port", long = "--port", default_value_t = DEFAULT_PORT)]
+    #[clap(long, default_value_t = DEFAULT_PORT)]
     port: u16,
 }
 
