@@ -155,7 +155,7 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) {
     // op completes, its associated `<step to perform with result>` is
     // performed.
     //
-    // The `select! macro is a foundational building block for writing
+    // The `select!` macro is a foundational building block for writing
     // asynchronous Rust. See the API docs for more details:
     //
     // https://docs.rs/tokio/*/tokio/macro.select.html
