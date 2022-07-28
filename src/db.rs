@@ -329,10 +329,7 @@ impl Shared {
             }
 
             // The key expired, remove it
-            debug! {
-                key = &key.as_str(),
-                "purged_expired_key",
-            }
+            debug!(key = &key.as_str(), "purged_expired_key");
             state.entries.remove(key);
             state.expirations.remove(&(when, id));
         }

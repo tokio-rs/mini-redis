@@ -84,10 +84,10 @@ impl Connection {
                 ConnectionState::Open => continue,
                 ConnectionState::Closed | ConnectionState::Reset => {
                     if !self.buffer.is_empty() {
-                        warn! {
-                            incomplete =? self.buffer,
-                            "connection closed with incomplete frame"
-                        };
+                        warn!(
+                            incomplete = ?self.buffer, 
+                            "connection closed with incomplete frame",
+                        );
                     }
                     return Ok(None);
                 }
@@ -104,9 +104,7 @@ impl Connection {
             Ok(_) => Ok(ConnectionState::Open),
             // the connection was closed abruptly by the peer
             Err(e) if e.kind() == ConnectionReset => {
-                warn! {
-                    "connection closed abruptly by peer"
-                };
+                warn!("connection closed abruptly by peer");
                 Ok(ConnectionState::Reset)
             }
             // reading failed for some other reason

@@ -323,7 +323,7 @@ impl Handler {
         name = "Handler::run",
         skip(self),
         fields(
-            ?peer_addr = self.connection.peer_addr().unwrap(),
+            peer_addr = %self.connection.peer_addr().unwrap(),
         ),
     )]
     async fn run(&mut self) -> crate::Result<()> {
@@ -378,10 +378,7 @@ impl Handler {
                 //      };
                 // `tracing` provides structured logging, so information is
                 // "logged" as key-value pairs.
-                warn! {
-                    %cause,
-                    "failed to parse command from frame"
-                };
+                warn!(%cause, "failed to parse command from frame");
                 // ...and (2) respond to the client with the error:
                 Command::from_error(cause)
             }

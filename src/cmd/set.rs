@@ -131,7 +131,7 @@ impl Set {
         skip(self, db, dst),
         fields(
             key = self.key.as_str(),
-            ?expire = self.expire.as_ref().map(Duration::as_secs_f64),
+            expire = ?self.expire.as_ref(),
         ),
     )]
     pub(crate) async fn apply(self, db: &Db, dst: &mut Connection) -> crate::Result<()> {
