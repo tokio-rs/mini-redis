@@ -56,7 +56,7 @@ impl Ping {
         name = "Ping::apply",
         skip(self, dst),
         fields(
-            ?msg = self.msg,
+            msg = ?self.msg,
         ),
     )]
     pub(crate) async fn apply(self, dst: &mut Connection) -> crate::Result<()> {
