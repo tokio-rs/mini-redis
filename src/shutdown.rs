@@ -34,12 +34,6 @@ impl Shutdown {
 
     /// Receive the shutdown notice, waiting if necessary.
     pub(crate) async fn recv(&mut self) {
-        // If the shutdown signal has already been received, then return
-        // immediately.
-        if self.shutdown {
-            return;
-        }
-
         // Cannot receive a "lag error" as only one value is ever sent.
         let _ = self.notify.recv().await;
 
