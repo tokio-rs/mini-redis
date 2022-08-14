@@ -153,7 +153,7 @@ implements this using one [broadcast channel][broadcast] per channel and a
 the server to update the active subscriptions.
 
 [broadcast]: https://docs.rs/tokio/*/tokio/sync/broadcast/index.html
-[`StreamMap`]: https://docs.rs/tokio/*/tokio/stream/struct.StreamMap.html
+[`StreamMap`]: https://docs.rs/tokio-stream/*/tokio_stream/struct.StreamMap.html
 
 ### Using a `std::sync::Mutex` in an async application
 
