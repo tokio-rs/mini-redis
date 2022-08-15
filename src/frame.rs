@@ -173,8 +173,8 @@ impl Frame {
     }
 }
 
-impl PartialEq<&str> for Frame {
-    fn eq(&self, other: &&str) -> bool {
+impl PartialEq<str> for Frame {
+    fn eq(&self, other: &str) -> bool {
         match self {
             Frame::Simple(s) => s.eq(other),
             Frame::Bulk(s) => s.eq(other),
