@@ -3,6 +3,18 @@ use std::net::SocketAddr;
 use tokio::net::TcpListener;
 use tokio::task::JoinHandle;
 
+/// A basic PING PONG test.
+#[tokio::test]
+async fn ping_pong() {
+    let (addr, _) = start_server().await;
+    let mut client = client::connect(addr).await.unwrap();
+    let pong = client.ping(None).await.unwrap();
+    assert_eq!(b"PONG", &pong[..]);
+
+    let pong = client.ping(Some("你好世界".to_string())).await.unwrap();
+    assert_eq!("你好世界".as_bytes(), &pong[..]);
+}
+
 /// A basic "hello world" style test. A server instance is started in a
 /// background task. A client instance is then established and set and get
 /// commands are sent to the server. The response is then evaluated
