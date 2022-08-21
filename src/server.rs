@@ -227,7 +227,7 @@ impl Listener {
             // to the semaphore.
             //
             // `acquire_owned()` returns `Err` when the semaphore has been
-            // closed. We don't ever close the sempahore, so `unwrap()` is safe.
+            // closed. We don't ever close the semaphore, so `unwrap()` is safe.
             let permit = self
                 .limit_connections
                 .clone()
