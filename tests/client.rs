@@ -67,7 +67,7 @@ async fn receive_message_multiple_subscribed_channels() {
 }
 
 /// test that a client accurately removes its own subscribed chanel list
-/// when unbscribing to all subscribed channels by submitting an empty vec
+/// when unsubscribing to all subscribed channels by submitting an empty vec
 #[tokio::test]
 async fn unsubscribes_from_channels() {
     let (addr, _) = start_server().await;
