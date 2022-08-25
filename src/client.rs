@@ -2,7 +2,7 @@
 //!
 //! Provides an async connect and methods for issuing the supported commands.
 
-use crate::cmd::{Get, Publish, Set, Subscribe, Unsubscribe};
+use crate::cmd::{Get, Ping, Publish, Set, Subscribe, Unsubscribe};
 use crate::{Connection, Frame};
 
 use async_stream::try_stream;
@@ -87,6 +87,42 @@ pub async fn connect<T: ToSocketAddrs>(addr: T) -> crate::Result<Client> {
 }
 
 impl Client {
+    /// Ping to the server.
+    ///
+    /// Returns PONG if no argument is provided, otherwise
+    /// return a copy of the argument as a bulk.
+    ///
+    /// This command is often used to test if a connection
+    /// is still alive, or to measure latency.
+    ///
+    /// # Examples
+    ///
+    /// Demonstrates basic usage.
+    /// ```no_run
+    /// use mini_redis::client;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let mut client = client::connect("localhost:6379").await.unwrap();
+    ///
+    ///     let pong = client.ping(None).await.unwrap();
+    ///     assert_eq!(b"PONG", &pong[..]);
+    /// }
+    /// ```
+    #[instrument(skip(self))]
+    pub async fn ping(&mut self, msg: Option<String>) -> crate::Result<Bytes> {
+        let frame = Ping::new(msg).into_frame();
+        debug!(request = ?frame);
+
+        self.connection.write_frame(&frame).await?;
+
+        match self.read_response().await? {
+            Frame::Simple(value) => Ok(value.into()),
+            Frame::Bulk(value) => Ok(value),
+            frame => Err(frame.to_error()),
+        }
+    }
+
     /// Get the value of key.
     ///
     /// If the key does not exist the special value `None` is returned.
