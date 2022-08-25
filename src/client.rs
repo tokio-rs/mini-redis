@@ -94,6 +94,7 @@ impl Client {
     ///
     /// This command is often used to test if a connection
     /// is still alive, or to measure latency.
+    ///
     /// # Examples
     ///
     /// Demonstrates basic usage.
