@@ -28,7 +28,7 @@ struct Cli {
 enum Command {
     Ping {
         /// Message to ping
-        message: Option<String>,
+        msg: Option<String>,
     },
     /// Get the value of key.
     Get {
@@ -89,8 +89,8 @@ async fn main() -> mini_redis::Result<()> {
 
     // Process the requested command
     match cli.command {
-        Command::Ping { message } => {
-            let value = client.ping(message).await?;
+        Command::Ping { msg } => {
+            let value = client.ping(msg).await?;
             if let Ok(string) = str::from_utf8(&value) {
                 println!("\"{}\"", string);
             } else {
