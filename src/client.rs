@@ -333,7 +333,7 @@ impl Client {
     /// The core `SUBSCRIBE` logic, used by misc subscribe fns
     async fn subscribe_cmd(&mut self, channels: &[String]) -> crate::Result<()> {
         // Convert the `Subscribe` command into a frame
-        let frame = Subscribe::new(&channels).into_frame();
+        let frame = Subscribe::new(channels).into_frame();
 
         debug!(request = ?frame);
 
@@ -359,7 +359,7 @@ impl Client {
                     // num-subscribed is the number of channels that the client
                     // is currently subscribed to.
                     [subscribe, schannel, ..]
-                        if *subscribe == "subscribe" && *schannel == channel => {}
+                        if subscribe == "subscribe" && schannel == channel.as_str() => {}
                     _ => return Err(response.to_error()),
                 },
                 frame => return Err(frame.to_error()),
@@ -410,7 +410,7 @@ impl Subscriber {
 
                 match mframe {
                     Frame::Array(ref frame) => match frame.as_slice() {
-                        [message, channel, content] if *message == "message" => Ok(Some(Message {
+                        [message, channel, content] if message == "message" => Ok(Some(Message {
                             channel: channel.to_string(),
                             content: Bytes::from(content.to_string()),
                         })),
@@ -459,7 +459,7 @@ impl Subscriber {
     /// Unsubscribe to a list of new channels
     #[instrument(skip(self))]
     pub async fn unsubscribe(&mut self, channels: &[String]) -> crate::Result<()> {
-        let frame = Unsubscribe::new(&channels).into_frame();
+        let frame = Unsubscribe::new(channels).into_frame();
 
         debug!(request = ?frame);
 
@@ -481,7 +481,7 @@ impl Subscriber {
 
             match response {
                 Frame::Array(ref frame) => match frame.as_slice() {
-                    [unsubscribe, channel, ..] if *unsubscribe == "unsubscribe" => {
+                    [unsubscribe, channel, ..] if unsubscribe == "unsubscribe" => {
                         let len = self.subscribed_channels.len();
 
                         if len == 0 {
@@ -490,7 +490,7 @@ impl Subscriber {
                         }
 
                         // unsubscribed channel should exist in the subscribed list at this point
-                        self.subscribed_channels.retain(|c| *channel != &c[..]);
+                        self.subscribed_channels.retain(|c| channel != &c[..]);
 
                         // Only a single channel should be removed from the
                         // list of subscribed channels.
