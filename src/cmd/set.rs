@@ -3,7 +3,7 @@ use crate::{Connection, Db, Frame};
 
 use bytes::Bytes;
 use std::time::Duration;
-use tracing::{debug, instrument};
+use tracing::instrument;
 
 /// Set `key` to hold the string `value`.
 ///
@@ -77,7 +77,8 @@ impl Set {
     /// ```text
     /// SET key value [EX seconds|PX milliseconds]
     /// ```
-    pub(crate) fn parse_frames(parse: &mut Parse) -> crate::Result<Set> {
+    #[instrument(level = "trace", name = "Set::parse_frames", skip(parse))]
+    pub(crate) fn parse_frames(parse: &mut Parse) -> Result<Self, ParseError> {
         use ParseError::EndOfStream;
 
         // Read the key to set. This is a required field
@@ -124,14 +125,21 @@ impl Set {
     ///
     /// The response is written to `dst`. This is called by the server in order
     /// to execute a received command.
-    #[instrument(skip(self, db, dst))]
+    #[instrument(
+        level = "trace",
+        name = "Set::apply",
+        skip(self, db, dst),
+        fields(
+            key = self.key.as_str(),
+            expire = ?self.expire.as_ref(),
+        ),
+    )]
     pub(crate) async fn apply(self, db: &Db, dst: &mut Connection) -> crate::Result<()> {
         // Set the value in the shared database state.
         db.set(self.key, self.value, self.expire);
 
         // Create a success response and write it to `dst`.
         let response = Frame::Simple("OK".to_string());
-        debug!(?response);
         dst.write_frame(&response).await?;
 
         Ok(())

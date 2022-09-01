@@ -6,11 +6,12 @@
 use crate::{Command, Connection, Db, DbDropGuard, Shutdown};
 
 use std::future::Future;
+use std::ops::ControlFlow;
 use std::sync::Arc;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::{broadcast, mpsc, Semaphore};
 use tokio::time::{self, Duration};
-use tracing::{debug, error, info, instrument};
+use tracing::{error, info, instrument, warn};
 
 /// Server listener state. Created in the `run` call. It includes a `run` method
 /// which performs the TCP listening and initialization of per-connection state.
@@ -317,57 +318,82 @@ impl Handler {
     ///
     /// When the shutdown signal is received, the connection is processed until
     /// it reaches a safe state, at which point it is terminated.
-    #[instrument(skip(self))]
+    #[instrument(
+        level = "info",
+        name = "Handler::run",
+        skip(self),
+        fields(
+            peer_addr = %self.connection.peer_addr().unwrap(),
+        ),
+    )]
     async fn run(&mut self) -> crate::Result<()> {
         // As long as the shutdown signal has not been received, try to read a
         // new request frame.
         while !self.shutdown.is_shutdown() {
-            // While reading a request frame, also listen for the shutdown
-            // signal.
-            let maybe_frame = tokio::select! {
-                res = self.connection.read_frame() => res?,
-                _ = self.shutdown.recv() => {
-                    // If a shutdown signal is received, return from `run`.
-                    // This will result in the task terminating.
-                    return Ok(());
-                }
-            };
-
-            // If `None` is returned from `read_frame()` then the peer closed
-            // the socket. There is no further work to do and the task can be
-            // terminated.
-            let frame = match maybe_frame {
-                Some(frame) => frame,
-                None => return Ok(()),
-            };
-
-            // Convert the redis frame into a command struct. This returns an
-            // error if the frame is not a valid redis command or it is an
-            // unsupported command.
-            let cmd = Command::from_frame(frame)?;
-
-            // Logs the `cmd` object. The syntax here is a shorthand provided by
-            // the `tracing` crate. It can be thought of as similar to:
-            //
-            // ```
-            // debug!(cmd = format!("{:?}", cmd));
-            // ```
-            //
-            // `tracing` provides structured logging, so information is "logged"
-            // as key-value pairs.
-            debug!(?cmd);
-
-            // Perform the work needed to apply the command. This may mutate the
-            // database state as a result.
-            //
-            // The connection is passed into the apply function which allows the
-            // command to write response frames directly to the connection. In
-            // the case of pub/sub, multiple frames may be send back to the
-            // peer.
-            cmd.apply(&self.db, &mut self.connection, &mut self.shutdown)
-                .await?;
+            match self.process_frame().await? {
+                ControlFlow::Continue(..) => continue,
+                ControlFlow::Break(..) => return Ok(()),
+            }
         }
 
         Ok(())
+    }
+
+    /// Process a single connection.
+    #[instrument(level = "debug", name = "Handler::process_frame", skip(self))]
+    async fn process_frame(&mut self) -> crate::Result<ControlFlow<(), ()>> {
+        // While reading a request frame, also listen for the shutdown
+        // signal.
+        let maybe_frame = tokio::select! {
+            res = self.connection.read_frame() => res?,
+            _ = self.shutdown.recv() => {
+                // If a shutdown signal is received, return from `run`.
+                // This will result in the task terminating.
+                return Ok(ControlFlow::Break(()));
+            }
+        };
+
+        // If `None` is returned from `read_frame()` then the peer closed
+        // the socket. There is no further work to do and the task can be
+        // terminated.
+        let frame = match maybe_frame {
+            Some(frame) => frame,
+            None => return Ok(ControlFlow::Break(())),
+        };
+
+        // Convert the redis frame into a command struct. This returns an
+        // error if the frame is not a valid redis command.
+        let cmd = match Command::from_frame(frame) {
+            Ok(cmd) => cmd,
+            Err(cause) => {
+                // The frame was malformed and could not be parsed. This is
+                // probably indicative of an issue with the client (as opposed
+                // to our server), so we (1) emit a warning...
+                //
+                // The syntax here is a shorthand provided by the `tracing`
+                // crate. It can be thought of as similar to:
+                //      warn! {
+                //          cause = format!("{}", cause),
+                //          "failed to parse command from frame"
+                //      };
+                // `tracing` provides structured logging, so information is
+                // "logged" as key-value pairs.
+                warn!(%cause, "failed to parse command from frame");
+                // ...and (2) respond to the client with the error:
+                Command::from_error(cause)
+            }
+        };
+
+        // Perform the work needed to apply the command. This may mutate the
+        // database state as a result.
+        //
+        // The connection is passed into the apply function which allows the
+        // command to write response frames directly to the connection. In
+        // the case of pub/sub, multiple frames may be send back to the
+        // peer.
+        cmd.apply(&self.db, &mut self.connection, &mut self.shutdown)
+            .await?;
+
+        Ok(ControlFlow::Continue(()))
     }
 }

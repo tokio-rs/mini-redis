@@ -2,6 +2,7 @@ use crate::Frame;
 
 use bytes::Bytes;
 use std::{fmt, str, vec};
+use tracing::instrument;
 
 /// Utility for parsing a command
 ///
@@ -20,7 +21,7 @@ pub(crate) struct Parse {
 /// Only `EndOfStream` errors are handled at runtime. All other errors result in
 /// the connection being terminated.
 #[derive(Debug)]
-pub(crate) enum ParseError {
+pub enum ParseError {
     /// Attempting to extract a value failed due to the frame being fully
     /// consumed.
     EndOfStream,
@@ -33,6 +34,7 @@ impl Parse {
     /// Create a new `Parse` to parse the contents of `frame`.
     ///
     /// Returns `Err` if `frame` is not an array frame.
+    #[instrument(level = "trace", name = "Parse::new")]
     pub(crate) fn new(frame: Frame) -> Result<Parse, ParseError> {
         let array = match frame {
             Frame::Array(array) => array,
@@ -46,6 +48,7 @@ impl Parse {
 
     /// Return the next entry. Array frames are arrays of frames, so the next
     /// entry is a frame.
+    #[instrument(level = "trace", name = "Parse::next", skip(self))]
     fn next(&mut self) -> Result<Frame, ParseError> {
         self.parts.next().ok_or(ParseError::EndOfStream)
     }
@@ -53,6 +56,7 @@ impl Parse {
     /// Return the next entry as a string.
     ///
     /// If the next entry cannot be represented as a String, then an error is returned.
+    #[instrument(level = "trace", name = "Parse::next_string", skip(self))]
     pub(crate) fn next_string(&mut self) -> Result<String, ParseError> {
         match self.next()? {
             // Both `Simple` and `Bulk` representation may be strings. Strings
@@ -76,6 +80,7 @@ impl Parse {
     ///
     /// If the next entry cannot be represented as raw bytes, an error is
     /// returned.
+    #[instrument(level = "trace", name = "Parse::next_bytes", skip(self))]
     pub(crate) fn next_bytes(&mut self) -> Result<Bytes, ParseError> {
         match self.next()? {
             // Both `Simple` and `Bulk` representation may be raw bytes.
@@ -99,6 +104,7 @@ impl Parse {
     ///
     /// If the next entry cannot be represented as an integer, then an error is
     /// returned.
+    #[instrument(level = "trace", name = "Parse::next_int", skip(self))]
     pub(crate) fn next_int(&mut self) -> Result<u64, ParseError> {
         use atoi::atoi;
 
@@ -116,6 +122,7 @@ impl Parse {
     }
 
     /// Ensure there are no more entries in the array
+    #[instrument(level = "trace", name = "Parse::finish", skip(self))]
     pub(crate) fn finish(&mut self) -> Result<(), ParseError> {
         if self.parts.next().is_none() {
             Ok(())

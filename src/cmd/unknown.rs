@@ -25,7 +25,14 @@ impl Unknown {
     /// Responds to the client, indicating the command is not recognized.
     ///
     /// This usually means the command is not yet implemented by `mini-redis`.
-    #[instrument(skip(self, dst))]
+    #[instrument(
+        level = "trace",
+        name = "Unknown::apply",
+        skip(self, dst),
+        fields(
+            command_name = self.command_name.as_str(),
+        ),
+    )]
     pub(crate) async fn apply(self, dst: &mut Connection) -> crate::Result<()> {
         let response = Frame::Error(format!("ERR unknown command '{}'", self.command_name));
 
