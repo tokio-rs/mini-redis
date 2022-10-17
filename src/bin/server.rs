@@ -50,10 +50,16 @@ struct Cli {
     port: Option<u16>,
 }
 
-#[cfg(not(feature = "otel"))]
+#[cfg(not(any(feature = "otel", feature = "console")))]
 fn set_up_logging() -> mini_redis::Result<()> {
     // See https://docs.rs/tracing for more info
     tracing_subscriber::fmt::try_init()
+}
+
+#[cfg(feature = "console")]
+fn set_up_logging() -> mini_redis::Result<()> {
+    console_subscriber::init();
+    Ok(())
 }
 
 #[cfg(feature = "otel")]
