@@ -16,9 +16,11 @@
 //!     cargo run --example pub
 
 #![warn(rust_2018_idioms)]
+#![cfg_attr(sim, allow(dead_code, unused_imports))]
 
 use mini_redis::{client, Result};
 
+#[cfg(not(sim))]
 #[tokio::main]
 async fn main() -> Result<()> {
     // Open a connection to the mini-redis address.
@@ -29,3 +31,6 @@ async fn main() -> Result<()> {
 
     Ok(())
 }
+
+#[cfg(sim)]
+fn main() {}

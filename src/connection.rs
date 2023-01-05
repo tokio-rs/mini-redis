@@ -3,7 +3,14 @@ use crate::frame::{self, Frame};
 use bytes::{Buf, BytesMut};
 use std::io::{self, Cursor};
 use tokio::io::{AsyncReadExt, AsyncWriteExt, BufWriter};
-use tokio::net::TcpStream;
+
+#[cfg(not(sim))]
+pub use tokio::net::{TcpListener, TcpStream, ToSocketAddrs};
+#[cfg(sim)]
+pub use turmoil::{
+    net::{TcpListener, TcpStream},
+    ToSocketAddrs,
+};
 
 /// Send and receive `Frame` values from a remote peer.
 ///

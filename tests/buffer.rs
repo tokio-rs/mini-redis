@@ -1,3 +1,5 @@
+#![cfg(not(sim))]
+
 use mini_redis::{buffer, client, server};
 use std::net::SocketAddr;
 use tokio::net::TcpListener;

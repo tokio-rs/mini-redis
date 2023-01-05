@@ -40,9 +40,21 @@ opentelemetry-aws = { version = "0.5.0", optional = true }
 # Allows you to send data to the OTel collector
 opentelemetry-otlp = { version = "0.10.0", optional = true }
 
+# TODO: Make this cfg dep
+turmoil = "0.3"
+
 [dev-dependencies]
 # Enable test-utilities in dev mode only. This is mostly for tests.
 tokio = { version = "1", features = ["test-util"] }
 
 [features]
 otel = ["dep:opentelemetry", "dep:tracing-opentelemetry", "dep:opentelemetry-aws", "dep:opentelemetry-otlp"]
+
+[workspace]
+members = [
+  ".",
+  "xtask"
+]
+
+[patch.crates-io]
+turmoil = { path = "../turmoil" }

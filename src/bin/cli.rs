@@ -1,3 +1,5 @@
+#![cfg_attr(sim, allow(dead_code, unused_imports))]
+
 use mini_redis::{client, DEFAULT_PORT};
 
 use bytes::Bytes;
@@ -64,6 +66,9 @@ enum Command {
     },
 }
 
+#[cfg(sim)]
+fn main() {}
+
 /// Entry point for CLI tool.
 ///
 /// The `[tokio::main]` annotation signals that the Tokio runtime should be
@@ -73,6 +78,7 @@ enum Command {
 /// `flavor = "current_thread"` is used here to avoid spawning background
 /// threads. The CLI tool use case benefits more by being lighter instead of
 /// multi-threaded.
+#[cfg(not(sim))]
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> mini_redis::Result<()> {
     // Enable logging

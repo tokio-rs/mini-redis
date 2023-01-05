@@ -1,0 +1,6 @@
+[alias]
+xtask = "run --manifest-path ./xtask/Cargo.toml --"
+
+# Uncomment the lines below to allow your IDE to be in sim mode
+# [build]
+# rustflags = ["--cfg", "tokio_unstable", "--cfg", "sim"]

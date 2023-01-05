@@ -2,9 +2,10 @@
 //!
 //! Provides a blocking connect and methods for issuing the supported commands.
 
+use crate::connection::ToSocketAddrs;
+
 use bytes::Bytes;
 use std::time::Duration;
-use tokio::net::ToSocketAddrs;
 use tokio::runtime::Runtime;
 
 pub use crate::client::Message;
