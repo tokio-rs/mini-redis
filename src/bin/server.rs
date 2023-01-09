@@ -5,7 +5,6 @@
 //! `mini_redis::server`.
 //!
 //! The `clap` crate is used for parsing arguments.
-#![cfg_attr(sim, allow(dead_code, unused_imports))]
 
 use mini_redis::{server, DEFAULT_PORT};
 
@@ -29,10 +28,6 @@ use tracing_subscriber::{
     fmt, layer::SubscriberExt, util::SubscriberInitExt, util::TryInitError, EnvFilter,
 };
 
-#[cfg(sim)]
-pub fn main() {}
-
-#[cfg(not(sim))]
 #[tokio::main]
 pub async fn main() -> mini_redis::Result<()> {
     set_up_logging()?;

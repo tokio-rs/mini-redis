@@ -21,6 +21,7 @@ name = "mini-redis-server"
 path = "src/bin/server.rs"
 
 [dependencies]
+async-trait = "0.1"
 async-stream = "0.3.0"
 atoi = "0.3.2"
 bytes = "1"
@@ -40,8 +41,8 @@ opentelemetry-aws = { version = "0.5.0", optional = true }
 # Allows you to send data to the OTel collector
 opentelemetry-otlp = { version = "0.10.0", optional = true }
 
-# TODO: Make this cfg dep
-turmoil = "0.3"
+
+turmoil = { version = "0.3", optional = true }
 
 [dev-dependencies]
 # Enable test-utilities in dev mode only. This is mostly for tests.
@@ -49,12 +50,7 @@ tokio = { version = "1", features = ["test-util"] }
 
 [features]
 otel = ["dep:opentelemetry", "dep:tracing-opentelemetry", "dep:opentelemetry-aws", "dep:opentelemetry-otlp"]
-
-[workspace]
-members = [
-  ".",
-  "xtask"
-]
+sim = ["dep:turmoil"]
 
 [patch.crates-io]
 turmoil = { path = "../turmoil" }

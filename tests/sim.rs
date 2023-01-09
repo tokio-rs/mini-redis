@@ -1,7 +1,7 @@
-#![cfg(sim)]
+#![cfg(feature = "sim")]
 
 use mini_redis::{client, server};
-use turmoil::Builder;
+use turmoil::{net::TcpStream, Builder};
 
 #[test]
 fn smoke() {
@@ -17,7 +17,8 @@ fn smoke() {
 
     sim.client("client", async {
         // TODO: ? doesn't work here for some reason
-        let mut client = client::connect(HOST).await.unwrap();
+        let stream = TcpStream::connect(HOST).await.unwrap();
+        let mut client = client::Client::new(stream);
 
         client.set("hello", "world".into()).await.unwrap();
         let result = client.get("hello").await.unwrap().unwrap();

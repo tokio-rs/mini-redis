@@ -3,7 +3,7 @@
 //! Provides an async `run` function that listens for inbound connections,
 //! spawning a task per connection.
 
-use crate::connection::{TcpListener, TcpStream};
+use crate::io::{DynIo, DynListener};
 use crate::{Command, Connection, Db, DbDropGuard, Shutdown};
 
 use std::future::Future;
@@ -26,7 +26,7 @@ struct Listener {
     db_holder: DbDropGuard,
 
     /// TCP listener supplied by the `run` caller.
-    listener: TcpListener,
+    listener: DynListener,
 
     /// Limit the max number of connections.
     ///
@@ -66,7 +66,7 @@ struct Listener {
 
 /// Per-connection handler. Reads requests from `connection` and applies the
 /// commands to `db`.
-#[derive(Debug)]
+//#[derive(Debug)]
 struct Handler {
     /// Shared database handle.
     ///
@@ -121,7 +121,7 @@ const MAX_CONNECTIONS: usize = 250;
 ///
 /// `tokio::signal::ctrl_c()` can be used as the `shutdown` argument. This will
 /// listen for a SIGINT signal.
-pub async fn run(listener: TcpListener, shutdown: impl Future) {
+pub async fn run(listener: impl crate::io::Listener, shutdown: impl Future) {
     // When the provided `shutdown` future completes, we must send a shutdown
     // message to all active connections. We use a broadcast channel for this
     // purpose. The call below ignores the receiver of the broadcast pair, and when
@@ -132,7 +132,7 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) {
 
     // Initialize the listener state
     let mut server = Listener {
-        listener,
+        listener: Box::new(listener),
         db_holder: DbDropGuard::new(),
         limit_connections: Arc::new(Semaphore::new(MAX_CONNECTIONS)),
         notify_shutdown,
@@ -278,7 +278,7 @@ impl Listener {
     /// After the second failure, the task waits for 2 seconds. Each subsequent
     /// failure doubles the wait time. If accepting fails on the 6th try after
     /// waiting for 64 seconds, then this function returns with an error.
-    async fn accept(&mut self) -> crate::Result<TcpStream> {
+    async fn accept(&mut self) -> crate::Result<DynIo> {
         let mut backoff = 1;
 
         // Try to accept a few times
