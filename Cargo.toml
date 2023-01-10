@@ -41,7 +41,7 @@ opentelemetry-aws = { version = "0.5.0", optional = true }
 # Allows you to send data to the OTel collector
 opentelemetry-otlp = { version = "0.10.0", optional = true }
 # Optional depedency used for simulation testing
-turmoil = { version = "0.3", optional = true }
+turmoil = { version = "0.4", optional = true }
 
 [dev-dependencies]
 # Enable test-utilities in dev mode only. This is mostly for tests.
@@ -51,5 +51,3 @@ tokio = { version = "1", features = ["test-util"] }
 otel = ["dep:opentelemetry", "dep:tracing-opentelemetry", "dep:opentelemetry-aws", "dep:opentelemetry-otlp"]
 sim = ["dep:turmoil"]
 
-[patch.crates-io]
-turmoil = { git = "https://github.com/tokio-rs/turmoil" }
