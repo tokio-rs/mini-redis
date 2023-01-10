@@ -1,3 +1,0 @@
-# Enable tokio's unstable features required by turmoil
-[build]
-rustflags = ["--cfg", "tokio_unstable"]

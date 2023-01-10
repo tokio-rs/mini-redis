@@ -1280,6 +1280,7 @@ checksum = "59547bce71d9c38b83d9c0e92b6066c4253371f15005def0c30d9657f50c7642"
 [[package]]
 name = "turmoil"
 version = "0.3.3"
+source = "git+https://github.com/tokio-rs/turmoil#b412c06242eae152e08552e0aa365b0d78cf5277"
 dependencies = [
  "bytes",
  "futures",
