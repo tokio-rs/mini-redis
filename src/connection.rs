@@ -4,7 +4,7 @@ use bytes::{Buf, BytesMut};
 use std::io::{self, Cursor};
 use tokio::io::{AsyncReadExt, AsyncWriteExt, BufWriter};
 
-use crate::io::{DynIo, Io};
+use crate::io::{DynStream, Io};
 
 /// Send and receive `Frame` values from a remote peer.
 ///
@@ -23,7 +23,7 @@ pub struct Connection {
     // The `TcpStream`. It is decorated with a `BufWriter`, which provides write
     // level buffering. The `BufWriter` implementation provided by Tokio is
     // sufficient for our needs.
-    stream: BufWriter<DynIo>,
+    stream: BufWriter<DynStream>,
 
     // The buffer for reading frames.
     buffer: BytesMut,
@@ -34,7 +34,7 @@ impl Connection {
     /// are initialized.
     pub fn new(socket: impl Io) -> Connection {
         Connection {
-            stream: BufWriter::new(Box::pin(socket) as DynIo),
+            stream: BufWriter::new(Box::pin(socket) as DynStream),
             // Default to a 4KB read buffer. For the use case of mini redis,
             // this is fine. However, real applications will want to tune this
             // value to their specific use case. There is a high likelihood that

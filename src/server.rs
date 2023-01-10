@@ -3,7 +3,7 @@
 //! Provides an async `run` function that listens for inbound connections,
 //! spawning a task per connection.
 
-use crate::io::{DynIo, DynListener};
+use crate::io::{DynListener, DynStream};
 use crate::{Command, Connection, Db, DbDropGuard, Shutdown};
 
 use std::future::Future;
@@ -121,7 +121,7 @@ const MAX_CONNECTIONS: usize = 250;
 ///
 /// `tokio::signal::ctrl_c()` can be used as the `shutdown` argument. This will
 /// listen for a SIGINT signal.
-pub async fn run(listener: impl crate::io::Listener, shutdown: impl Future) {
+pub async fn run(listener: impl crate::io::Accept, shutdown: impl Future) {
     // When the provided `shutdown` future completes, we must send a shutdown
     // message to all active connections. We use a broadcast channel for this
     // purpose. The call below ignores the receiver of the broadcast pair, and when
@@ -278,7 +278,7 @@ impl Listener {
     /// After the second failure, the task waits for 2 seconds. Each subsequent
     /// failure doubles the wait time. If accepting fails on the 6th try after
     /// waiting for 64 seconds, then this function returns with an error.
-    async fn accept(&mut self) -> crate::Result<DynIo> {
+    async fn accept(&mut self) -> crate::Result<DynStream> {
         let mut backoff = 1;
 
         // Try to accept a few times
