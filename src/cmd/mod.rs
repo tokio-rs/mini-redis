@@ -42,7 +42,7 @@ impl Command {
     ///
     /// On success, the command value is returned, otherwise, `Err` is returned.
     pub fn from_frame(frame: Frame) -> crate::Result<Command> {
-        // The frame  value is decorated with `Parse`. `Parse` provides a
+        // The frame value is decorated with `Parse`. `Parse` provides a
         // "cursor" like API which makes parsing the command easier.
         //
         // The frame value must be an array variant. Any other frame variants
