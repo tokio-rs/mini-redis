@@ -333,7 +333,7 @@ impl Client {
     /// The core `SUBSCRIBE` logic, used by misc subscribe fns
     async fn subscribe_cmd(&mut self, channels: &[String]) -> crate::Result<()> {
         // Convert the `Subscribe` command into a frame
-        let frame = Subscribe::new(&channels).into_frame();
+        let frame = Subscribe::new(channels.to_vec()).into_frame();
 
         debug!(request = ?frame);
 

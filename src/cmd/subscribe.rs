@@ -34,10 +34,8 @@ type Messages = Pin<Box<dyn Stream<Item = Bytes> + Send>>;
 
 impl Subscribe {
     /// Creates a new `Subscribe` command to listen on the specified channels.
-    pub(crate) fn new(channels: &[String]) -> Subscribe {
-        Subscribe {
-            channels: channels.to_vec(),
-        }
+    pub(crate) fn new(channels: Vec<String>) -> Subscribe {
+        Subscribe {channels}
     }
 
     /// Parse a `Subscribe` instance from a received frame.
@@ -288,7 +286,7 @@ impl Unsubscribe {
         }
     }
 
-    /// Parse a `Unsubscribe` instance from a received frame.
+    /// Parse an `Unsubscribe` instance from a received frame.
     ///
     /// The `Parse` argument provides a cursor-like API to read fields from the
     /// `Frame`. At this point, the entire frame has already been received from
