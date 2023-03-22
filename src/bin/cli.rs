@@ -125,7 +125,7 @@ async fn main() -> mini_redis::Result<()> {
             println!("OK");
         }
         Command::Publish { channel, message } => {
-            client.publish(&channel, message.into()).await?;
+            client.publish(&channel, message).await?;
             println!("Publish OK");
         }
         Command::Subscribe { channels } => {

@@ -35,7 +35,7 @@ type Messages = Pin<Box<dyn Stream<Item = Bytes> + Send>>;
 impl Subscribe {
     /// Creates a new `Subscribe` command to listen on the specified channels.
     pub(crate) fn new(channels: Vec<String>) -> Subscribe {
-        Subscribe {channels}
+        Subscribe { channels }
     }
 
     /// Parse a `Subscribe` instance from a received frame.
