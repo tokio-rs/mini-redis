@@ -110,7 +110,7 @@ impl Client {
     /// }
     /// ```
     #[instrument(skip(self))]
-    pub async fn ping(&mut self, msg: Option<String>) -> crate::Result<Bytes> {
+    pub async fn ping(&mut self, msg: Option<Bytes>) -> crate::Result<Bytes> {
         let frame = Ping::new(msg).into_frame();
         debug!(request = ?frame);
 

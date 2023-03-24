@@ -28,7 +28,8 @@ struct Cli {
 enum Command {
     Ping {
         /// Message to ping
-        msg: Option<String>,
+        #[clap(parse(from_str = bytes_from_str))]
+        msg: Option<Bytes>,
     },
     /// Get the value of key.
     Get {
