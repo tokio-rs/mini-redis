@@ -88,6 +88,7 @@ https://github.com/aws-observability/aws-otel-collector/blob/main/docs/developer
 
 `mini-redis` currently supports the following commands.
 
+* [PING](https://redis.io/commands/ping)
 * [GET](https://redis.io/commands/get)
 * [SET](https://redis.io/commands/set)
 * [PUBLISH](https://redis.io/commands/publish)
