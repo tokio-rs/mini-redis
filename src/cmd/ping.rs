@@ -1,6 +1,6 @@
 use crate::{Connection, Frame, Parse, ParseError};
 use bytes::Bytes;
-use tracing::instrument;
+use tracing::{debug, instrument};
 
 /// Returns PONG if no argument is provided, otherwise
 /// return a copy of the argument as a bulk.
@@ -57,6 +57,8 @@ impl Ping {
             None => Frame::Simple("PONG".to_string()),
             Some(msg) => Frame::Bulk(msg),
         };
+
+        debug!(?response);
 
         // Write the response back to the client
         dst.write_frame(&response).await?;
