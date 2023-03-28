@@ -110,7 +110,7 @@ impl Client {
     /// }
     /// ```
     #[instrument(skip(self))]
-    pub async fn ping(&mut self, msg: Option<String>) -> crate::Result<Bytes> {
+    pub async fn ping(&mut self, msg: Option<Bytes>) -> crate::Result<Bytes> {
         let frame = Ping::new(msg).into_frame();
         debug!(request = ?frame);
 
@@ -459,7 +459,7 @@ impl Subscriber {
     /// Unsubscribe to a list of new channels
     #[instrument(skip(self))]
     pub async fn unsubscribe(&mut self, channels: &[String]) -> crate::Result<()> {
-        let frame = Unsubscribe::new(&channels).into_frame();
+        let frame = Unsubscribe::new(channels).into_frame();
 
         debug!(request = ?frame);
 

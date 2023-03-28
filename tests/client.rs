@@ -21,7 +21,7 @@ async fn ping_pong_with_message() {
     let (addr, _) = start_server().await;
     let mut client = client::connect(addr).await.unwrap();
 
-    let pong = client.ping(Some("你好世界".to_string())).await.unwrap();
+    let pong = client.ping(Some("你好世界".into())).await.unwrap();
     assert_eq!("你好世界".as_bytes(), &pong[..]);
 }
 

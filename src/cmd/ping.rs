@@ -1,6 +1,6 @@
 use crate::{Connection, Frame, Parse, ParseError};
 use bytes::Bytes;
-use tracing::instrument;
+use tracing::{debug, instrument};
 
 /// Returns PONG if no argument is provided, otherwise
 /// return a copy of the argument as a bulk.
@@ -10,12 +10,12 @@ use tracing::instrument;
 #[derive(Debug, Default)]
 pub struct Ping {
     /// optional message to be returned
-    msg: Option<String>,
+    msg: Option<Bytes>,
 }
 
 impl Ping {
     /// Create a new `Ping` command with optional `msg`.
-    pub fn new(msg: Option<String>) -> Ping {
+    pub fn new(msg: Option<Bytes>) -> Ping {
         Ping { msg }
     }
 
@@ -40,7 +40,7 @@ impl Ping {
     /// PING [message]
     /// ```
     pub(crate) fn parse_frames(parse: &mut Parse) -> crate::Result<Ping> {
-        match parse.next_string() {
+        match parse.next_bytes() {
             Ok(msg) => Ok(Ping::new(Some(msg))),
             Err(ParseError::EndOfStream) => Ok(Ping::default()),
             Err(e) => Err(e.into()),
@@ -55,8 +55,10 @@ impl Ping {
     pub(crate) async fn apply(self, dst: &mut Connection) -> crate::Result<()> {
         let response = match self.msg {
             None => Frame::Simple("PONG".to_string()),
-            Some(msg) => Frame::Bulk(Bytes::from(msg)),
+            Some(msg) => Frame::Bulk(msg),
         };
+
+        debug!(?response);
 
         // Write the response back to the client
         dst.write_frame(&response).await?;
@@ -72,7 +74,7 @@ impl Ping {
         let mut frame = Frame::array();
         frame.push_bulk(Bytes::from("ping".as_bytes()));
         if let Some(msg) = self.msg {
-            frame.push_bulk(Bytes::from(msg));
+            frame.push_bulk(msg);
         }
         frame
     }
