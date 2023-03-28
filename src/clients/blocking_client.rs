@@ -89,10 +89,10 @@ impl BlockingClient {
     /// Demonstrates basic usage.
     ///
     /// ```no_run
-    /// use mini_redis::clients::blocking_client;
+    /// use mini_redis::clients;
     ///
     /// fn main() {
-    ///     let mut client = blocking_client::connect("localhost:6379").unwrap();
+    ///     let mut client = clients::blocking_connect("localhost:6379").unwrap();
     ///
     ///     let val = client.get("foo").unwrap();
     ///     println!("Got = {:?}", val);
@@ -115,10 +115,10 @@ impl BlockingClient {
     /// Demonstrates basic usage.
     ///
     /// ```no_run
-    /// use mini_redis::clients::blocking_client;
+    /// use mini_redis::clients;
     ///
     /// fn main() {
-    ///     let mut client = blocking_client::connect("localhost:6379").unwrap();
+    ///     let mut client = clients::blocking_connect("localhost:6379").unwrap();
     ///
     ///     client.set("foo", "bar".into()).unwrap();
     ///
@@ -149,13 +149,13 @@ impl BlockingClient {
     /// favorable.
     ///
     /// ```no_run
-    /// use mini_redis::clients::blocking_client;
+    /// use mini_redis::clients;
     /// use std::thread;
     /// use std::time::Duration;
     ///
     /// fn main() {
     ///     let ttl = Duration::from_millis(500);
-    ///     let mut client = blocking_client::connect("localhost:6379").unwrap();
+    ///     let mut client = clients::blocking_connect("localhost:6379").unwrap();
     ///
     ///     client.set_expires("foo", "bar".into(), ttl).unwrap();
     ///
@@ -191,10 +191,10 @@ impl BlockingClient {
     /// Demonstrates basic usage.
     ///
     /// ```no_run
-    /// use mini_redis::clients::blocking_client;
+    /// use mini_redis::clients;
     ///
     /// fn main() {
-    ///     let mut client = blocking_client::connect("localhost:6379").unwrap();
+    ///     let mut client = clients::blocking_connect("localhost:6379").unwrap();
     ///
     ///     let val = client.publish("foo", "bar".into()).unwrap();
     ///     println!("Got = {:?}", val);
