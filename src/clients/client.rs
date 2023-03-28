@@ -60,11 +60,11 @@ pub struct Message {
 /// # Examples
 ///
 /// ```no_run
-/// use mini_redis::client;
+/// use mini_redis::clients;
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     let client = match client::connect("localhost:6379").await {
+///     let client = match clients::connect("localhost:6379").await {
 ///         Ok(client) => client,
 ///         Err(_) => panic!("failed to establish connection"),
 ///     };
@@ -99,11 +99,11 @@ impl Client {
     ///
     /// Demonstrates basic usage.
     /// ```no_run
-    /// use mini_redis::client;
+    /// use mini_redis::clients;
     ///
     /// #[tokio::main]
     /// async fn main() {
-    ///     let mut client = client::connect("localhost:6379").await.unwrap();
+    ///     let mut client = clients::connect("localhost:6379").await.unwrap();
     ///
     ///     let pong = client.ping(None).await.unwrap();
     ///     assert_eq!(b"PONG", &pong[..]);
@@ -132,11 +132,11 @@ impl Client {
     /// Demonstrates basic usage.
     ///
     /// ```no_run
-    /// use mini_redis::client;
+    /// use mini_redis::clients;
     ///
     /// #[tokio::main]
     /// async fn main() {
-    ///     let mut client = client::connect("localhost:6379").await.unwrap();
+    ///     let mut client = clients::connect("localhost:6379").await.unwrap();
     ///
     ///     let val = client.get("foo").await.unwrap();
     ///     println!("Got = {:?}", val);
@@ -178,11 +178,11 @@ impl Client {
     /// Demonstrates basic usage.
     ///
     /// ```no_run
-    /// use mini_redis::client;
+    /// use mini_redis::clients;
     ///
     /// #[tokio::main]
     /// async fn main() {
-    ///     let mut client = client::connect("localhost:6379").await.unwrap();
+    ///     let mut client = clients::connect("localhost:6379").await.unwrap();
     ///
     ///     client.set("foo", "bar".into()).await.unwrap();
     ///
@@ -217,14 +217,14 @@ impl Client {
     /// favorable.
     ///
     /// ```no_run
-    /// use mini_redis::client;
+    /// use mini_redis::clients;
     /// use tokio::time;
     /// use std::time::Duration;
     ///
     /// #[tokio::main]
     /// async fn main() {
     ///     let ttl = Duration::from_millis(500);
-    ///     let mut client = client::connect("localhost:6379").await.unwrap();
+    ///     let mut client = clients::connect("localhost:6379").await.unwrap();
     ///
     ///     client.set_expires("foo", "bar".into(), ttl).await.unwrap();
     ///
@@ -282,11 +282,11 @@ impl Client {
     /// Demonstrates basic usage.
     ///
     /// ```no_run
-    /// use mini_redis::client;
+    /// use mini_redis::clients;
     ///
     /// #[tokio::main]
     /// async fn main() {
-    ///     let mut client = client::connect("localhost:6379").await.unwrap();
+    ///     let mut client = clients::connect("localhost:6379").await.unwrap();
     ///
     ///     let val = client.publish("foo", "bar".into()).await.unwrap();
     ///     println!("Got = {:?}", val);

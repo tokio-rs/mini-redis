@@ -16,7 +16,7 @@
 //! * `server`: Redis server implementation. Includes a single `run` function
 //!   that takes a `TcpListener` and starts accepting redis client connections.
 //!
-//! * `client`: an asynchronous Redis client implementation. Demonstrates how to
+//! * `clients/client`: an asynchronous Redis client implementation. Demonstrates how to
 //!   build clients with Tokio.
 //!
 //! * `cmd`: implementations of the supported Redis commands.
