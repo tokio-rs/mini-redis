@@ -1,3 +1,5 @@
+#![cfg(not(sim))]
+
 use mini_redis::server;
 
 use std::net::SocketAddr;
