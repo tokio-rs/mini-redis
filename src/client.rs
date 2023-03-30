@@ -3,13 +3,14 @@
 //! Provides an async connect and methods for issuing the supported commands.
 
 use crate::cmd::{Get, Ping, Publish, Set, Subscribe, Unsubscribe};
+use crate::io::Io;
 use crate::{Connection, Frame};
 
 use async_stream::try_stream;
 use bytes::Bytes;
 use std::io::{Error, ErrorKind};
 use std::time::Duration;
-use tokio::net::{TcpStream, ToSocketAddrs};
+use tokio::net::ToSocketAddrs;
 use tokio_stream::Stream;
 use tracing::{debug, instrument};
 
@@ -71,22 +72,18 @@ pub struct Message {
 /// # drop(client);
 /// }
 /// ```
-///
-pub async fn connect<T: ToSocketAddrs>(addr: T) -> crate::Result<Client> {
-    // The `addr` argument is passed directly to `TcpStream::connect`. This
-    // performs any asynchronous DNS lookup and attempts to establish the TCP
-    // connection. An error at either step returns an error, which is then
-    // bubbled up to the caller of `mini_redis` connect.
-    let socket = TcpStream::connect(addr).await?;
-
-    // Initialize the connection state. This allocates read/write buffers to
-    // perform redis protocol frame parsing.
-    let connection = Connection::new(socket);
-
-    Ok(Client { connection })
+pub async fn connect(addr: impl ToSocketAddrs) -> crate::Result<Client> {
+    let stream = tokio::net::TcpStream::connect(addr).await?;
+    Ok(Client::new(stream))
 }
 
 impl Client {
+    #[doc(hidden)]
+    pub fn new(stream: impl Io) -> Client {
+        let connection = Connection::new(stream);
+        Client { connection }
+    }
+
     /// Ping to the server.
     ///
     /// Returns PONG if no argument is provided, otherwise

@@ -4,9 +4,9 @@
 
 use bytes::Bytes;
 use std::time::Duration;
-use tokio::net::ToSocketAddrs;
-use tokio::runtime::Runtime;
+use tokio::{net::ToSocketAddrs, runtime::Runtime};
 
+use crate::client;
 pub use crate::client::Message;
 
 /// Established connection with a Redis server.
@@ -74,7 +74,7 @@ pub fn connect<T: ToSocketAddrs>(addr: T) -> crate::Result<BlockingClient> {
         .enable_all()
         .build()?;
 
-    let inner = rt.block_on(crate::client::connect(addr))?;
+    let inner = rt.block_on(client::connect(addr))?;
 
     Ok(BlockingClient { inner, rt })
 }
