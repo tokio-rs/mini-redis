@@ -1,4 +1,4 @@
-use mini_redis::{clients, DEFAULT_PORT};
+use mini_redis::{clients::Client, DEFAULT_PORT};
 
 use bytes::Bytes;
 use clap::{Parser, Subcommand};
@@ -86,7 +86,7 @@ async fn main() -> mini_redis::Result<()> {
     let addr = format!("{}:{}", cli.host, cli.port);
 
     // Establish a connection
-    let mut client = clients::connect(&addr).await?;
+    let mut client = Client::connect(&addr).await?;
 
     // Process the requested command
     match cli.command {

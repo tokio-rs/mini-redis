@@ -50,36 +50,36 @@ struct SubscriberIterator {
     rt: Runtime,
 }
 
-/// Establish a connection with the Redis server located at `addr`.
-///
-/// `addr` may be any type that can be asynchronously converted to a
-/// `SocketAddr`. This includes `SocketAddr` and strings. The `ToSocketAddrs`
-/// trait is the Tokio version and not the `std` version.
-///
-/// # Examples
-///
-/// ```no_run
-/// use mini_redis::clients;
-///
-/// fn main() {
-///     let client = match clients::blocking_connect("localhost:6379") {
-///         Ok(client) => client,
-///         Err(_) => panic!("failed to establish connection"),
-///     };
-/// # drop(client);
-/// }
-/// ```
-pub fn blocking_connect<T: ToSocketAddrs>(addr: T) -> crate::Result<BlockingClient> {
-    let rt = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?;
-
-    let inner = rt.block_on(crate::clients::connect(addr))?;
-
-    Ok(BlockingClient { inner, rt })
-}
-
 impl BlockingClient {
+    /// Establish a connection with the Redis server located at `addr`.
+    ///
+    /// `addr` may be any type that can be asynchronously converted to a
+    /// `SocketAddr`. This includes `SocketAddr` and strings. The `ToSocketAddrs`
+    /// trait is the Tokio version and not the `std` version.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mini_redis::clients::BlockingClient;
+    ///
+    /// fn main() {
+    ///     let client = match BlockingClient::connect("localhost:6379") {
+    ///         Ok(client) => client,
+    ///         Err(_) => panic!("failed to establish connection"),
+    ///     };
+    /// # drop(client);
+    /// }
+    /// ```
+    pub fn connect<T: ToSocketAddrs>(addr: T) -> crate::Result<BlockingClient> {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?;
+
+        let inner = rt.block_on(crate::clients::Client::connect(addr))?;
+
+        Ok(BlockingClient { inner, rt })
+    }
+
     /// Get the value of key.
     ///
     /// If the key does not exist the special value `None` is returned.
@@ -89,10 +89,10 @@ impl BlockingClient {
     /// Demonstrates basic usage.
     ///
     /// ```no_run
-    /// use mini_redis::clients;
+    /// use mini_redis::clients::BlockingClient;
     ///
     /// fn main() {
-    ///     let mut client = clients::blocking_connect("localhost:6379").unwrap();
+    ///     let mut client = BlockingClient::connect("localhost:6379").unwrap();
     ///
     ///     let val = client.get("foo").unwrap();
     ///     println!("Got = {:?}", val);
@@ -115,10 +115,10 @@ impl BlockingClient {
     /// Demonstrates basic usage.
     ///
     /// ```no_run
-    /// use mini_redis::clients;
+    /// use mini_redis::clients::BlockingClient;
     ///
     /// fn main() {
-    ///     let mut client = clients::blocking_connect("localhost:6379").unwrap();
+    ///     let mut client = BlockingClient::connect("localhost:6379").unwrap();
     ///
     ///     client.set("foo", "bar".into()).unwrap();
     ///
@@ -149,13 +149,13 @@ impl BlockingClient {
     /// favorable.
     ///
     /// ```no_run
-    /// use mini_redis::clients;
+    /// use mini_redis::clients::BlockingClient;
     /// use std::thread;
     /// use std::time::Duration;
     ///
     /// fn main() {
     ///     let ttl = Duration::from_millis(500);
-    ///     let mut client = clients::blocking_connect("localhost:6379").unwrap();
+    ///     let mut client = BlockingClient::connect("localhost:6379").unwrap();
     ///
     ///     client.set_expires("foo", "bar".into(), ttl).unwrap();
     ///
@@ -191,10 +191,10 @@ impl BlockingClient {
     /// Demonstrates basic usage.
     ///
     /// ```no_run
-    /// use mini_redis::clients;
+    /// use mini_redis::clients::BlockingClient;
     ///
     /// fn main() {
-    ///     let mut client = clients::blocking_connect("localhost:6379").unwrap();
+    ///     let mut client = BlockingClient::connect("localhost:6379").unwrap();
     ///
     ///     let val = client.publish("foo", "bar".into()).unwrap();
     ///     println!("Got = {:?}", val);

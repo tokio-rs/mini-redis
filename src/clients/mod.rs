@@ -1,8 +1,8 @@
 mod client;
-pub use client::{connect, Client, Message, Subscriber};
+pub use client::{Client, Message, Subscriber};
 
 mod blocking_client;
-pub use blocking_client::{blocking_connect, BlockingClient};
+pub use blocking_client::BlockingClient;
 
 mod buffered_client;
-pub use buffered_client::{buffer, BufferedClient};
+pub use buffered_client::BufferedClient;

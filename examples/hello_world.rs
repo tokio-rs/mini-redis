@@ -13,12 +13,12 @@
 
 #![warn(rust_2018_idioms)]
 
-use mini_redis::{clients, Result};
+use mini_redis::{clients::Client, Result};
 
 #[tokio::main]
 pub async fn main() -> Result<()> {
     // Open a connection to the mini-redis address.
-    let mut client = clients::connect("127.0.0.1:6379").await?;
+    let mut client = Client::connect("127.0.0.1:6379").await?;
 
     // Set the key "hello" with value "world"
     client.set("hello", "world".into()).await?;
