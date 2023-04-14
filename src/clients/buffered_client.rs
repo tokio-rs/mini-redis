@@ -1,39 +1,11 @@
-use crate::client::Client;
+use crate::clients::Client;
 use crate::Result;
 
 use bytes::Bytes;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::sync::oneshot;
 
-/// Create a new client request buffer
-///
-/// The `Client` performs Redis commands directly on the TCP connection. Only a
-/// single request may be in-flight at a given time and operations require
-/// mutable access to the `Client` handle. This prevents using a single Redis
-/// connection from multiple Tokio tasks.
-///
-/// The strategy for dealing with this class of problem is to spawn a dedicated
-/// Tokio task to manage the Redis connection and using "message passing" to
-/// operate on the connection. Commands are pushed into a channel. The
-/// connection task pops commands off of the channel and applies them to the
-/// Redis connection. When the response is received, it is forwarded to the
-/// original requester.
-///
-/// The returned `Buffer` handle may be cloned before passing the new handle to
-/// separate tasks.
-pub fn buffer(client: Client) -> Buffer {
-    // Setting the message limit to a hard coded value of 32. in a real-app, the
-    // buffer size should be configurable, but we don't need to do that here.
-    let (tx, rx) = channel(32);
-
-    // Spawn a task to process requests for the connection.
-    tokio::spawn(async move { run(client, rx).await });
-
-    // Return the `Buffer` handle.
-    Buffer { tx }
-}
-
-// Enum used to message pass the requested command from the `Buffer` handle
+// Enum used to message pass the requested command from the `BufferedClient` handle
 #[derive(Debug)]
 enum Command {
     Get(String),
@@ -53,7 +25,7 @@ type Message = (Command, oneshot::Sender<Result<Option<Bytes>>>);
 /// response is returned back to the caller via a `oneshot`.
 async fn run(mut client: Client, mut rx: Receiver<Message>) {
     // Repeatedly pop messages from the channel. A return value of `None`
-    // indicates that all `Buffer` handles have dropped and there will never be
+    // indicates that all `BufferedClient` handles have dropped and there will never be
     // another message sent on the channel.
     while let Some((cmd, tx)) = rx.recv().await {
         // The command is forwarded to the connection
@@ -71,11 +43,39 @@ async fn run(mut client: Client, mut rx: Receiver<Message>) {
 }
 
 #[derive(Clone)]
-pub struct Buffer {
+pub struct BufferedClient {
     tx: Sender<Message>,
 }
 
-impl Buffer {
+impl BufferedClient {
+    /// Create a new client request buffer
+    ///
+    /// The `Client` performs Redis commands directly on the TCP connection. Only a
+    /// single request may be in-flight at a given time and operations require
+    /// mutable access to the `Client` handle. This prevents using a single Redis
+    /// connection from multiple Tokio tasks.
+    ///
+    /// The strategy for dealing with this class of problem is to spawn a dedicated
+    /// Tokio task to manage the Redis connection and using "message passing" to
+    /// operate on the connection. Commands are pushed into a channel. The
+    /// connection task pops commands off of the channel and applies them to the
+    /// Redis connection. When the response is received, it is forwarded to the
+    /// original requester.
+    ///
+    /// The returned `BufferedClient` handle may be cloned before passing the new handle to
+    /// separate tasks.
+    pub fn buffer(client: Client) -> BufferedClient {
+        // Setting the message limit to a hard coded value of 32. in a real-app, the
+        // buffer size should be configurable, but we don't need to do that here.
+        let (tx, rx) = channel(32);
+
+        // Spawn a task to process requests for the connection.
+        tokio::spawn(async move { run(client, rx).await });
+
+        // Return the `BufferedClient` handle.
+        BufferedClient { tx }
+    }
+
     /// Get the value of a key.
     ///
     /// Same as `Client::get` but requests are **buffered** until the associated

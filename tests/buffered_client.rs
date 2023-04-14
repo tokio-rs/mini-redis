@@ -1,4 +1,7 @@
-use mini_redis::{buffer, client, server};
+use mini_redis::{
+    clients::{BufferedClient, Client},
+    server,
+};
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 use tokio::task::JoinHandle;
@@ -11,8 +14,8 @@ use tokio::task::JoinHandle;
 async fn pool_key_value_get_set() {
     let (addr, _) = start_server().await;
 
-    let client = client::connect(addr).await.unwrap();
-    let mut client = buffer(client);
+    let client = Client::connect(addr).await.unwrap();
+    let mut client = BufferedClient::buffer(client);
 
     client.set("hello", "world".into()).await.unwrap();
 

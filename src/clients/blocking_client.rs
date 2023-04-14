@@ -7,7 +7,7 @@ use std::time::Duration;
 use tokio::net::ToSocketAddrs;
 use tokio::runtime::Runtime;
 
-pub use crate::client::Message;
+pub use crate::clients::Message;
 
 /// Established connection with a Redis server.
 ///
@@ -18,7 +18,7 @@ pub use crate::client::Message;
 /// Requests are issued using the various methods of `Client`.
 pub struct BlockingClient {
     /// The asynchronous `Client`.
-    inner: crate::client::Client,
+    inner: crate::clients::Client,
 
     /// A `current_thread` runtime for executing operations on the asynchronous
     /// client in a blocking manner.
@@ -33,7 +33,7 @@ pub struct BlockingClient {
 /// called.
 pub struct BlockingSubscriber {
     /// The asynchronous `Subscriber`.
-    inner: crate::client::Subscriber,
+    inner: crate::clients::Subscriber,
 
     /// A `current_thread` runtime for executing operations on the asynchronous
     /// `Subscriber` in a blocking manner.
@@ -43,43 +43,43 @@ pub struct BlockingSubscriber {
 /// The iterator returned by `Subscriber::into_iter`.
 struct SubscriberIterator {
     /// The asynchronous `Subscriber`.
-    inner: crate::client::Subscriber,
+    inner: crate::clients::Subscriber,
 
     /// A `current_thread` runtime for executing operations on the asynchronous
     /// `Subscriber` in a blocking manner.
     rt: Runtime,
 }
 
-/// Establish a connection with the Redis server located at `addr`.
-///
-/// `addr` may be any type that can be asynchronously converted to a
-/// `SocketAddr`. This includes `SocketAddr` and strings. The `ToSocketAddrs`
-/// trait is the Tokio version and not the `std` version.
-///
-/// # Examples
-///
-/// ```no_run
-/// use mini_redis::blocking_client;
-///
-/// fn main() {
-///     let client = match blocking_client::connect("localhost:6379") {
-///         Ok(client) => client,
-///         Err(_) => panic!("failed to establish connection"),
-///     };
-/// # drop(client);
-/// }
-/// ```
-pub fn connect<T: ToSocketAddrs>(addr: T) -> crate::Result<BlockingClient> {
-    let rt = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?;
-
-    let inner = rt.block_on(crate::client::connect(addr))?;
-
-    Ok(BlockingClient { inner, rt })
-}
-
 impl BlockingClient {
+    /// Establish a connection with the Redis server located at `addr`.
+    ///
+    /// `addr` may be any type that can be asynchronously converted to a
+    /// `SocketAddr`. This includes `SocketAddr` and strings. The `ToSocketAddrs`
+    /// trait is the Tokio version and not the `std` version.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use mini_redis::clients::BlockingClient;
+    ///
+    /// fn main() {
+    ///     let client = match BlockingClient::connect("localhost:6379") {
+    ///         Ok(client) => client,
+    ///         Err(_) => panic!("failed to establish connection"),
+    ///     };
+    /// # drop(client);
+    /// }
+    /// ```
+    pub fn connect<T: ToSocketAddrs>(addr: T) -> crate::Result<BlockingClient> {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?;
+
+        let inner = rt.block_on(crate::clients::Client::connect(addr))?;
+
+        Ok(BlockingClient { inner, rt })
+    }
+
     /// Get the value of key.
     ///
     /// If the key does not exist the special value `None` is returned.
@@ -89,10 +89,10 @@ impl BlockingClient {
     /// Demonstrates basic usage.
     ///
     /// ```no_run
-    /// use mini_redis::blocking_client;
+    /// use mini_redis::clients::BlockingClient;
     ///
     /// fn main() {
-    ///     let mut client = blocking_client::connect("localhost:6379").unwrap();
+    ///     let mut client = BlockingClient::connect("localhost:6379").unwrap();
     ///
     ///     let val = client.get("foo").unwrap();
     ///     println!("Got = {:?}", val);
@@ -115,10 +115,10 @@ impl BlockingClient {
     /// Demonstrates basic usage.
     ///
     /// ```no_run
-    /// use mini_redis::blocking_client;
+    /// use mini_redis::clients::BlockingClient;
     ///
     /// fn main() {
-    ///     let mut client = blocking_client::connect("localhost:6379").unwrap();
+    ///     let mut client = BlockingClient::connect("localhost:6379").unwrap();
     ///
     ///     client.set("foo", "bar".into()).unwrap();
     ///
@@ -149,13 +149,13 @@ impl BlockingClient {
     /// favorable.
     ///
     /// ```no_run
-    /// use mini_redis::blocking_client;
+    /// use mini_redis::clients::BlockingClient;
     /// use std::thread;
     /// use std::time::Duration;
     ///
     /// fn main() {
     ///     let ttl = Duration::from_millis(500);
-    ///     let mut client = blocking_client::connect("localhost:6379").unwrap();
+    ///     let mut client = BlockingClient::connect("localhost:6379").unwrap();
     ///
     ///     client.set_expires("foo", "bar".into(), ttl).unwrap();
     ///
@@ -191,10 +191,10 @@ impl BlockingClient {
     /// Demonstrates basic usage.
     ///
     /// ```no_run
-    /// use mini_redis::blocking_client;
+    /// use mini_redis::clients::BlockingClient;
     ///
     /// fn main() {
-    ///     let mut client = blocking_client::connect("localhost:6379").unwrap();
+    ///     let mut client = BlockingClient::connect("localhost:6379").unwrap();
     ///
     ///     let val = client.publish("foo", "bar".into()).unwrap();
     ///     println!("Got = {:?}", val);

@@ -16,7 +16,7 @@
 //! * `server`: Redis server implementation. Includes a single `run` function
 //!   that takes a `TcpListener` and starts accepting redis client connections.
 //!
-//! * `client`: an asynchronous Redis client implementation. Demonstrates how to
+//! * `clients/client`: an asynchronous Redis client implementation. Demonstrates how to
 //!   build clients with Tokio.
 //!
 //! * `cmd`: implementations of the supported Redis commands.
@@ -25,8 +25,8 @@
 //!   intermediate representation between a "command" and the byte
 //!   representation.
 
-pub mod blocking_client;
-pub mod client;
+pub mod clients;
+pub use clients::{BlockingClient, BufferedClient, Client};
 
 pub mod cmd;
 pub use cmd::Command;
@@ -45,9 +45,6 @@ mod parse;
 use parse::{Parse, ParseError};
 
 pub mod server;
-
-mod buffer;
-pub use buffer::{buffer, Buffer};
 
 mod shutdown;
 use shutdown::Shutdown;

@@ -17,12 +17,12 @@
 
 #![warn(rust_2018_idioms)]
 
-use mini_redis::{client, Result};
+use mini_redis::{clients::Client, Result};
 
 #[tokio::main]
 pub async fn main() -> Result<()> {
     // Open a connection to the mini-redis address.
-    let client = client::connect("127.0.0.1:6379").await?;
+    let client = Client::connect("127.0.0.1:6379").await?;
 
     // subscribe to channel foo
     let mut subscriber = client.subscribe(vec!["foo".into()]).await?;
