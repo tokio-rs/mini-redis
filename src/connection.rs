@@ -24,10 +24,9 @@ pub struct Connection {
     // sufficient for our needs.
     stream: BufWriter<TcpStream>,
 
-    // The buffer for reading frames. Unfortunately, Tokio's `BufReader`
-    // currently requires you to empty its buffer before you can ask it to
-    // retrieve more data from the underlying stream, so we have to manually
-    // implement buffering. This should be fixed in Tokio v0.3.
+    // The buffer for reading frames. Here we do manually buffer handling.
+    // A more high level approach would be to use `tokio_util::codec`, and
+    // implement your own codec for decoding and encoding frames.
     buffer: BytesMut,
 }
 
