@@ -110,7 +110,7 @@ and spawns a new task per connection. It gracefully handles `accept` errors.
 
 ### Client library
 
-[`client.rs`](src/client.rs) shows how to model an asynchronous client. The
+[`client.rs`](src/clients/client.rs) shows how to model an asynchronous client. The
 various capabilities are exposed as `async` methods.
 
 ### State shared across sockets
