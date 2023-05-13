@@ -25,7 +25,7 @@ async-stream = "0.3.0"
 atoi = "0.3.2"
 bytes = "1"
 rand = "0.8.5"
-clap = { version = "3.1.18", features = ["derive"] }
+clap = { version = "4.2.7", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
 tokio-stream = "0.1"
 tracing = "0.1.34"
