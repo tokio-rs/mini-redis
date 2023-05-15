@@ -39,9 +39,20 @@ opentelemetry-aws = { version = "0.5.0", optional = true }
 # Allows you to send data to the OTel collector
 opentelemetry-otlp = { version = "0.10.0", optional = true }
 
+fastrand = "1.9"
+pin-project-lite = "0.2.9"
+tokio-metrics = "0.2.2"
+
+[target.'cfg(not(target_env = "msvc"))'.dependencies]
+tikv-jemallocator = "0.5"
+
 [dev-dependencies]
 # Enable test-utilities in dev mode only. This is mostly for tests.
 tokio = { version = "1", features = ["test-util"] }
 
 [features]
 otel = ["dep:opentelemetry", "dep:tracing-opentelemetry", "dep:opentelemetry-aws", "dep:opentelemetry-otlp"]
+
+[patch.crates-io]
+tokio = { path = "../tokio/tokio" }
+tokio-metrics = { path = "../tokio-metrics" }

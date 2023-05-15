@@ -12,6 +12,54 @@ use tokio::sync::{broadcast, mpsc, Semaphore};
 use tokio::time::{self, Duration};
 use tracing::{debug, error, info, instrument};
 
+pin_project_lite::pin_project! {
+    struct SlowPoll<T> {
+        #[pin]
+        inner: T,
+    }
+}
+
+impl<T> SlowPoll<T> {
+    fn new(inner: T) -> Self {
+        SlowPoll { inner }
+    }
+}
+
+impl<T: Future> Future for SlowPoll<T> {
+    type Output = T::Output;
+
+    fn poll(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Self::Output> {
+        if true {
+            let n = fastrand::usize(0..100);
+            let micros = if n < 1 {
+                450
+            } else if n < 20 {
+                350 + n * 3
+            } else if n < 36 {
+                250 + n
+            } else if n < 40 {
+                150 + n
+            } else if n < 48 {
+                50 + n
+            } else if n < 53 {
+                n
+            } else {
+                0
+            };
+
+            if micros > 0 {
+                std::thread::sleep(Duration::from_micros(micros as _));
+            }
+        }
+
+        let me = self.project();
+        me.inner.poll(cx)
+    }
+}
+
 /// Server listener state. Created in the `run` call. It includes a `run` method
 /// which performs the TCP listening and initialization of per-connection state.
 #[derive(Debug)]
@@ -121,6 +169,38 @@ const MAX_CONNECTIONS: usize = 250;
 /// `tokio::signal::ctrl_c()` can be used as the `shutdown` argument. This will
 /// listen for a SIGINT signal.
 pub async fn run(listener: TcpListener, shutdown: impl Future) {
+    let handle = tokio::runtime::Handle::current();
+    let runtime_monitor = tokio_metrics::RuntimeMonitor::new(&handle);
+
+    std::thread::spawn(move || {
+        println!(
+            "{:#?}",
+            runtime_monitor
+                .task_poll_count_histogram_bucket_ranges()
+                .unwrap()
+        );
+
+        let mut i = 0;
+        for metrics in runtime_monitor.intervals() {
+            if metrics.total_polls_count > 0 {
+                // pretty-print the metric interval
+                let counts = metrics.task_poll_count_histogram.unwrap();
+                let sum: u64 = counts.iter().sum();
+                let mut percentages = Vec::with_capacity(counts.len());
+
+                for count in counts.iter() {
+                    percentages.push(100 * count / sum);
+                }
+
+                println!("{} = {:?}", i, percentages);
+                i += 1;
+            }
+
+            // wait 500ms
+            std::thread::sleep(Duration::from_secs(2));
+        }
+    });
+
     // When the provided `shutdown` future completes, we must send a shutdown
     // message to all active connections. We use a broadcast channel for this
     // purpose. The call below ignores the receiver of the broadcast pair, and when
@@ -256,7 +336,7 @@ impl Listener {
 
             // Spawn a new task to process the connections. Tokio tasks are like
             // asynchronous green threads and are executed concurrently.
-            tokio::spawn(async move {
+            tokio::spawn(SlowPoll::new(async move {
                 // Process the connection. If an error is encountered, log it.
                 if let Err(err) = handler.run().await {
                     error!(cause = ?err, "connection error");
@@ -264,7 +344,7 @@ impl Listener {
                 // Move the permit into the task and drop it after completion.
                 // This returns the permit back to the semaphore.
                 drop(permit);
-            });
+            }));
         }
     }
 

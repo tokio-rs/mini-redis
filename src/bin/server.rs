@@ -6,6 +6,12 @@
 //!
 //! The `clap` crate is used for parsing arguments.
 
+#[cfg(not(target_env = "msvc"))]
+use tikv_jemallocator::Jemalloc;
+
+#[global_allocator]
+static GLOBAL: Jemalloc = Jemalloc;
+
 use mini_redis::{server, DEFAULT_PORT};
 
 use clap::Parser;
@@ -28,19 +34,30 @@ use tracing_subscriber::{
     fmt, layer::SubscriberExt, util::SubscriberInitExt, util::TryInitError, EnvFilter,
 };
 
-#[tokio::main]
-pub async fn main() -> mini_redis::Result<()> {
+// #[tokio::main]
+pub fn main() -> mini_redis::Result<()> {
+    let rt = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .enable_metrics_poll_count_histogram()
+        .metrics_poll_count_histogram_scale(tokio::runtime::HistogramScale::Linear)
+        .metrics_poll_count_histogram_resolution(std::time::Duration::from_micros(50))
+        .metrics_poll_count_histogram_buckets(12)
+        // .disable_lifo_slot()
+        .build()
+        .unwrap();
     set_up_logging()?;
 
-    let cli = Cli::parse();
-    let port = cli.port.unwrap_or(DEFAULT_PORT);
+    rt.block_on(async {
+        let cli = Cli::parse();
+        let port = cli.port.unwrap_or(DEFAULT_PORT);
 
-    // Bind a TCP listener
-    let listener = TcpListener::bind(&format!("127.0.0.1:{}", port)).await?;
+        // Bind a TCP listener
+        let listener = TcpListener::bind(&format!("127.0.0.1:{}", port)).await?;
 
-    server::run(listener, signal::ctrl_c()).await;
+        server::run(listener, signal::ctrl_c()).await;
 
-    Ok(())
+        Ok(())
+    })
 }
 
 #[derive(Parser, Debug)]
