@@ -2,7 +2,7 @@ use tokio::sync::{broadcast, Notify};
 use tokio::time::{self, Duration, Instant};
 
 use bytes::Bytes;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeSet, HashMap};
 use std::sync::{Arc, Mutex};
 use tracing::debug;
 
@@ -69,19 +69,15 @@ struct State {
 
     /// Tracks key TTLs.
     ///
-    /// A `BTreeMap` is used to maintain expirations sorted by when they expire.
+    /// A `BTreeSet` is used to maintain expirations sorted by when they expire.
     /// This allows the background task to iterate this map to find the value
     /// expiring next.
     ///
     /// While highly unlikely, it is possible for more than one expiration to be
     /// created for the same instant. Because of this, the `Instant` is
-    /// insufficient for the key. A unique expiration identifier (`u64`) is used
-    /// to break these ties.
-    expirations: BTreeMap<(Instant, u64), String>,
-
-    /// Identifier to use for the next expiration. Each expiration is associated
-    /// with a unique identifier. See above for why.
-    next_id: u64,
+    /// insufficient for the key. A unique key (`String`) is used to
+    /// break these ties.
+    expirations: BTreeSet<(Instant, String)>,
 
     /// True when the Db instance is shutting down. This happens when all `Db`
     /// values drop. Setting this to `true` signals to the background task to
@@ -92,9 +88,6 @@ struct State {
 /// Entry in the key-value store
 #[derive(Debug)]
 struct Entry {
-    /// Uniquely identifies this entry.
-    id: u64,
-
     /// Stored data
     data: Bytes,
 
@@ -132,8 +125,7 @@ impl Db {
             state: Mutex::new(State {
                 entries: HashMap::new(),
                 pub_sub: HashMap::new(),
-                expirations: BTreeMap::new(),
-                next_id: 0,
+                expirations: BTreeSet::new(),
                 shutdown: false,
             }),
             background_task: Notify::new(),
@@ -166,11 +158,6 @@ impl Db {
     pub(crate) fn set(&self, key: String, value: Bytes, expire: Option<Duration>) {
         let mut state = self.shared.state.lock().unwrap();
 
-        // Get and increment the next insertion ID. Guarded by the lock, this
-        // ensures a unique identifier is associated with each `set` operation.
-        let id = state.next_id;
-        state.next_id += 1;
-
         // If this `set` becomes the key that expires **next**, the background
         // task needs to be notified so it can update its state.
         //
@@ -191,15 +178,14 @@ impl Db {
                 .unwrap_or(true);
 
             // Track the expiration.
-            state.expirations.insert((when, id), key.clone());
+            state.expirations.insert((when, key.clone()));
             when
         });
 
         // Insert the entry into the `HashMap`.
         let prev = state.entries.insert(
-            key,
+            key.clone(),
             Entry {
-                id,
                 data: value,
                 expires_at,
             },
@@ -211,7 +197,7 @@ impl Db {
         if let Some(prev) = prev {
             if let Some(when) = prev.expires_at {
                 // clear expiration
-                state.expirations.remove(&(when, prev.id));
+                state.expirations.remove(&(when, key));
             }
         }
 
@@ -315,7 +301,7 @@ impl Shared {
         // Find all keys scheduled to expire **before** now.
         let now = Instant::now();
 
-        while let Some((&(when, id), key)) = state.expirations.iter().next() {
+        while let Some(&(when, ref key)) = state.expirations.iter().next() {
             if when > now {
                 // Done purging, `when` is the instant at which the next key
                 // expires. The worker task will wait until this instant.
@@ -324,7 +310,7 @@ impl Shared {
 
             // The key expired, remove it
             state.entries.remove(key);
-            state.expirations.remove(&(when, id));
+            state.expirations.remove(&(when, key.clone()));
         }
 
         None
@@ -342,7 +328,7 @@ impl Shared {
 impl State {
     fn next_expiration(&self) -> Option<Instant> {
         self.expirations
-            .keys()
+            .iter()
             .next()
             .map(|expiration| expiration.0)
     }

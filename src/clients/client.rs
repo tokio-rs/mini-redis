@@ -113,7 +113,6 @@ impl Client {
     pub async fn ping(&mut self, msg: Option<Bytes>) -> crate::Result<Bytes> {
         let frame = Ping::new(msg).into_frame();
         debug!(request = ?frame);
-
         self.connection.write_frame(&frame).await?;
 
         match self.read_response().await? {
