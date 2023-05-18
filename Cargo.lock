@@ -606,7 +606,6 @@ dependencies = [
  "opentelemetry",
  "opentelemetry-aws",
  "opentelemetry-otlp",
- "rand",
  "tokio",
  "tokio-stream",
  "tracing",
