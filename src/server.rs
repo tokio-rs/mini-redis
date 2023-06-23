@@ -173,26 +173,29 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) {
     let runtime_monitor = tokio_metrics::RuntimeMonitor::new(&handle);
 
     std::thread::spawn(move || {
-        println!(
-            "{:#?}",
-            runtime_monitor
-                .task_poll_count_histogram_bucket_ranges()
-                .unwrap()
-        );
+        // println!(
+        //     "{:#?}",
+        //     runtime_monitor
+        //         .task_poll_count_histogram_bucket_ranges()
+        //         .unwrap()
+        // );
 
         let mut i = 0;
         for metrics in runtime_monitor.intervals() {
             if metrics.total_polls_count > 0 {
                 // pretty-print the metric interval
-                let counts = metrics.task_poll_count_histogram.unwrap();
-                let sum: u64 = counts.iter().sum();
-                let mut percentages = Vec::with_capacity(counts.len());
+                // let counts = metrics.task_poll_count_histogram.unwrap();
+                // let sum: u64 = counts.iter().sum();
+                // let mut percentages = Vec::with_capacity(counts.len());
 
-                for count in counts.iter() {
-                    percentages.push(100 * count / sum);
-                }
+                // for count in counts.iter() {
+                //     percentages.push(100 * count / sum);
+                // }
 
-                println!("{} = {:?}", i, percentages);
+                // println!("{} = {:?}", i, percentages);
+                println!("{}", i);
+                println!("  steals = {:?}", metrics.max_steal_operations);
+                println!("  overflows = {:?}", metrics.max_overflow_count);
                 i += 1;
             }
 

@@ -38,11 +38,10 @@ use tracing_subscriber::{
 pub fn main() -> mini_redis::Result<()> {
     let rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
-        .enable_metrics_poll_count_histogram()
-        .metrics_poll_count_histogram_scale(tokio::runtime::HistogramScale::Linear)
-        .metrics_poll_count_histogram_resolution(std::time::Duration::from_micros(50))
-        .metrics_poll_count_histogram_buckets(12)
-        // .disable_lifo_slot()
+        // .enable_metrics_poll_count_histogram()
+        // .metrics_poll_count_histogram_scale(tokio::runtime::HistogramScale::Linear)
+        // .metrics_poll_count_histogram_resolution(std::time::Duration::from_micros(50))
+        // .metrics_poll_count_histogram_buckets(12)
         .build()
         .unwrap();
     set_up_logging()?;
