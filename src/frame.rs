@@ -199,9 +199,11 @@ impl fmt::Display for Frame {
             Frame::Array(parts) => {
                 for (i, part) in parts.iter().enumerate() {
                     if i > 0 {
+                        // use space as the array element display separator
                         write!(fmt, " ")?;
-                        part.fmt(fmt)?;
                     }
+
+                    part.fmt(fmt)?;
                 }
 
                 Ok(())
