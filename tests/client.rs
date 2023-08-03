@@ -45,7 +45,7 @@ async fn key_value_get_set() {
 async fn receive_message_subscribed_channel() {
     let (addr, _) = start_server().await;
 
-    let client = Client::connect(addr.clone()).await.unwrap();
+    let client = Client::connect(addr).await.unwrap();
     let mut subscriber = client.subscribe(vec!["hello".into()]).await.unwrap();
 
     tokio::spawn(async move {
@@ -63,7 +63,7 @@ async fn receive_message_subscribed_channel() {
 async fn receive_message_multiple_subscribed_channels() {
     let (addr, _) = start_server().await;
 
-    let client = Client::connect(addr.clone()).await.unwrap();
+    let client = Client::connect(addr).await.unwrap();
     let mut subscriber = client
         .subscribe(vec!["hello".into(), "world".into()])
         .await
@@ -94,7 +94,7 @@ async fn receive_message_multiple_subscribed_channels() {
 async fn unsubscribes_from_channels() {
     let (addr, _) = start_server().await;
 
-    let client = Client::connect(addr.clone()).await.unwrap();
+    let client = Client::connect(addr).await.unwrap();
     let mut subscriber = client
         .subscribe(vec!["hello".into(), "world".into()])
         .await
