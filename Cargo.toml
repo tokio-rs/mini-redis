@@ -32,7 +32,7 @@ tracing-subscriber = { version = "0.3.11", features = ["env-filter"] }
 # Implements the types defined in the OTel spec
 opentelemetry = { version = "0.20.0", optional = true }
 # Integration between the tracing crate and the opentelemetry crate
-tracing-opentelemetry = { version = "0.20.0", optional = true }
+tracing-opentelemetry = { version = "0.21.0", optional = true }
 # Provides a "propagator" to pass along an XrayId across services
 opentelemetry-aws = { version = "0.8.0", optional = true }
 # Allows you to send data to the OTel collector
