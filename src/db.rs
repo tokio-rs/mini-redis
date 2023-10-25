@@ -1,9 +1,9 @@
-use tokio::sync::{broadcast, Notify};
-use tokio::time::{self, Duration, Instant};
-
-use bytes::Bytes;
 use std::collections::{BTreeSet, HashMap};
 use std::sync::{Arc, Mutex};
+
+use bytes::Bytes;
+use tokio::sync::{broadcast, Notify};
+use tokio::time::{self, Duration, Instant};
 use tracing::debug;
 
 /// A wrapper around a `Db` instance. This exists to allow orderly cleanup
@@ -176,7 +176,7 @@ impl Db {
                 .next_expiration()
                 .map(|expiration| expiration > when)
                 .unwrap_or(true);
-            
+
             when
         });
 
@@ -199,7 +199,9 @@ impl Db {
             }
         }
 
-        // Track the expiration.
+        // Track the expiration. If we insert first and then remove that will 
+        // cause bug when current `(when, key)` equals prev `(when, key)`.
+        // Remove then insert can avoid this.
         if let Some(when) = expires_at {
             state.expirations.insert((when, key));
         }
