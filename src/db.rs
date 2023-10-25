@@ -1,9 +1,9 @@
-use std::collections::{BTreeSet, HashMap};
-use std::sync::{Arc, Mutex};
-
-use bytes::Bytes;
 use tokio::sync::{broadcast, Notify};
 use tokio::time::{self, Duration, Instant};
+
+use bytes::Bytes;
+use std::collections::{BTreeSet, HashMap};
+use std::sync::{Arc, Mutex};
 use tracing::debug;
 
 /// A wrapper around a `Db` instance. This exists to allow orderly cleanup
@@ -177,6 +177,8 @@ impl Db {
                 .map(|expiration| expiration > when)
                 .unwrap_or(true);
 
+            // Track the expiration.
+            state.expirations.insert((when, key.clone()));
             when
         });
 
@@ -195,15 +197,8 @@ impl Db {
         if let Some(prev) = prev {
             if let Some(when) = prev.expires_at {
                 // clear expiration
-                state.expirations.remove(&(when, key.clone()));
+                state.expirations.remove(&(when, key));
             }
-        }
-
-        // Track the expiration. If we insert first and then remove that will 
-        // cause bug when current `(when, key)` equals prev `(when, key)`.
-        // Remove then insert can avoid this.
-        if let Some(when) = expires_at {
-            state.expirations.insert((when, key));
         }
 
         // Release the mutex before notifying the background task. This helps
