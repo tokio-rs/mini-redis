@@ -176,9 +176,7 @@ impl Db {
                 .next_expiration()
                 .map(|expiration| expiration > when)
                 .unwrap_or(true);
-
-            // Track the expiration.
-            state.expirations.insert((when, key.clone()));
+            
             when
         });
 
@@ -197,8 +195,13 @@ impl Db {
         if let Some(prev) = prev {
             if let Some(when) = prev.expires_at {
                 // clear expiration
-                state.expirations.remove(&(when, key));
+                state.expirations.remove(&(when, key.clone()));
             }
+        }
+
+        // Track the expiration.
+        if let Some(when) = expires_at {
+            state.expirations.insert((when, key));
         }
 
         // Release the mutex before notifying the background task. This helps
