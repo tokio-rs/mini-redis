@@ -22,7 +22,4 @@ jobs:
     - name: Run tests with OTel feature
       run: cargo test --verbose --features otel
     - name: rustfmt
-      uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: --all -- --check
+      run: cargo fmt --all --check
