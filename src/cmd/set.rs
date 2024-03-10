@@ -154,7 +154,7 @@ impl Set {
             // src/bin/cli.rs parses the expiration argument as milliseconds
             // in duration_from_ms_str()
             frame.push_bulk(Bytes::from("px".as_bytes()));
-            frame.push_int(ms.as_millis() as u64);
+            frame.push_bulk(Bytes::from(ms.as_millis().to_string()));
         }
         frame
     }
