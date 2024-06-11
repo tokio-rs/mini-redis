@@ -11,7 +11,7 @@ use tracing::debug;
 /// this struct is dropped.
 #[derive(Debug)]
 pub(crate) struct DbDropGuard {
-    /// The `Db` instance that will be shut down when this `DbHolder` struct
+    /// The `Db` instance that will be shut down when this `DbDropGuard` struct
     /// is dropped.
     db: Db,
 }
@@ -97,7 +97,7 @@ struct Entry {
 }
 
 impl DbDropGuard {
-    /// Create a new `DbHolder`, wrapping a `Db` instance. When this is dropped
+    /// Create a new `DbDropGuard`, wrapping a `Db` instance. When this is dropped
     /// the `Db`'s purge task will be shut down.
     pub(crate) fn new() -> DbDropGuard {
         DbDropGuard { db: Db::new() }
