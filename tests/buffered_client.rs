@@ -7,7 +7,7 @@ use tokio::net::TcpListener;
 use tokio::task::JoinHandle;
 
 /// A basic "hello world" style test. A server instance is started in a
-/// background task. A client instance is then established and used to intialize
+/// background task. A client instance is then established and used to initialize
 /// the buffer. Set and get commands are sent to the server. The response is
 /// then evaluated.
 #[tokio::test]

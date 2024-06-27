@@ -88,7 +88,7 @@ async fn receive_message_multiple_subscribed_channels() {
     assert_eq!(b"howdy?", &message2.content[..])
 }
 
-/// test that a client accurately removes its own subscribed chanel list
+/// test that a client accurately removes its own subscribed channel list
 /// when unsubscribing to all subscribed channels by submitting an empty vec
 #[tokio::test]
 async fn unsubscribes_from_channels() {

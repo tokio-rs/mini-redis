@@ -176,7 +176,7 @@ asynchronous Rust patterns with Tokio.
 Commands or other features should only be added if doing so is useful to
 demonstrate a new pattern.
 
-Contributions should come with extensive comments targetted to new Tokio users.
+Contributions should come with extensive comments targeted to new Tokio users.
 
 Contributions that only focus on clarifying and improving comments are very
 welcome.
