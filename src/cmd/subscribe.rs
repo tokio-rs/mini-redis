@@ -245,7 +245,7 @@ async fn handle_command(
     Ok(())
 }
 
-/// Creates the response to a subcribe request.
+/// Creates the response to a subscribe request.
 ///
 /// All of these functions take the `channel_name` as a `String` instead of
 /// a `&str` since `Bytes::from` can reuse the allocation in the `String`, and
