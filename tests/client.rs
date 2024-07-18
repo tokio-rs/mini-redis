@@ -1,4 +1,4 @@
-use mini_redis::{clients::Client, server};
+use mini_redis::{client, server};
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 use tokio::task::JoinHandle;
@@ -8,7 +8,7 @@ use tokio::task::JoinHandle;
 #[tokio::test]
 async fn ping_pong_without_message() {
     let (addr, _) = start_server().await;
-    let mut client = Client::connect(addr).await.unwrap();
+    let mut client = client::connect(addr).await.unwrap();
 
     let pong = client.ping(None).await.unwrap();
     assert_eq!(b"PONG", &pong[..]);
@@ -19,9 +19,9 @@ async fn ping_pong_without_message() {
 #[tokio::test]
 async fn ping_pong_with_message() {
     let (addr, _) = start_server().await;
-    let mut client = Client::connect(addr).await.unwrap();
+    let mut client = client::connect(addr).await.unwrap();
 
-    let pong = client.ping(Some("你好世界".into())).await.unwrap();
+    let pong = client.ping(Some("你好世界".to_string())).await.unwrap();
     assert_eq!("你好世界".as_bytes(), &pong[..]);
 }
 
@@ -32,7 +32,7 @@ async fn ping_pong_with_message() {
 async fn key_value_get_set() {
     let (addr, _) = start_server().await;
 
-    let mut client = Client::connect(addr).await.unwrap();
+    let mut client = client::connect(addr).await.unwrap();
     client.set("hello", "world".into()).await.unwrap();
 
     let value = client.get("hello").await.unwrap().unwrap();
@@ -45,11 +45,11 @@ async fn key_value_get_set() {
 async fn receive_message_subscribed_channel() {
     let (addr, _) = start_server().await;
 
-    let client = Client::connect(addr).await.unwrap();
+    let client = client::connect(addr).await.unwrap();
     let mut subscriber = client.subscribe(vec!["hello".into()]).await.unwrap();
 
     tokio::spawn(async move {
-        let mut client = Client::connect(addr).await.unwrap();
+        let mut client = client::connect(addr).await.unwrap();
         client.publish("hello", "world".into()).await.unwrap()
     });
 
@@ -63,14 +63,14 @@ async fn receive_message_subscribed_channel() {
 async fn receive_message_multiple_subscribed_channels() {
     let (addr, _) = start_server().await;
 
-    let client = Client::connect(addr).await.unwrap();
+    let client = client::connect(addr).await.unwrap();
     let mut subscriber = client
         .subscribe(vec!["hello".into(), "world".into()])
         .await
         .unwrap();
 
     tokio::spawn(async move {
-        let mut client = Client::connect(addr).await.unwrap();
+        let mut client = client::connect(addr).await.unwrap();
         client.publish("hello", "world".into()).await.unwrap()
     });
 
@@ -79,7 +79,7 @@ async fn receive_message_multiple_subscribed_channels() {
     assert_eq!(b"world", &message1.content[..]);
 
     tokio::spawn(async move {
-        let mut client = Client::connect(addr).await.unwrap();
+        let mut client = client::connect(addr).await.unwrap();
         client.publish("world", "howdy?".into()).await.unwrap()
     });
 
@@ -88,13 +88,13 @@ async fn receive_message_multiple_subscribed_channels() {
     assert_eq!(b"howdy?", &message2.content[..])
 }
 
-/// test that a client accurately removes its own subscribed channel list
+/// test that a client accurately removes its own subscribed chanel list
 /// when unsubscribing to all subscribed channels by submitting an empty vec
 #[tokio::test]
 async fn unsubscribes_from_channels() {
     let (addr, _) = start_server().await;
 
-    let client = Client::connect(addr).await.unwrap();
+    let client = client::connect(addr).await.unwrap();
     let mut subscriber = client
         .subscribe(vec!["hello".into(), "world".into()])
         .await
