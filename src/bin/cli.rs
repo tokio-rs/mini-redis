@@ -8,7 +8,7 @@ use std::str;
 use std::time::Duration;
 
 #[derive(Parser, Debug)]
-#[clap(
+#[command(
     name = "mini-redis-cli",
     version,
     author,
@@ -18,10 +18,10 @@ struct Cli {
     #[clap(subcommand)]
     command: Command,
 
-    #[clap(name = "hostname", long, default_value = "127.0.0.1")]
+    #[arg(id = "hostname", long, default_value = "127.0.0.1")]
     host: String,
 
-    #[clap(long, default_value_t = DEFAULT_PORT)]
+    #[arg(long, default_value_t = DEFAULT_PORT)]
     port: u16,
 }
 
@@ -29,7 +29,7 @@ struct Cli {
 enum Command {
     Ping {
         /// Message to ping
-        #[clap(value_parser = bytes_from_str)]
+        #[arg(value_parser = bytes_from_str)]
         msg: Option<Bytes>,
     },
     /// Get the value of key.
@@ -43,11 +43,11 @@ enum Command {
         key: String,
 
         /// Value to set.
-        #[clap(value_parser = bytes_from_str)]
+        #[arg(value_parser = bytes_from_str)]
         value: Bytes,
 
         /// Expire the value after specified amount of time
-        #[clap(value_parser = duration_from_ms_str)]
+        #[arg(value_parser = duration_from_ms_str)]
         expires: Option<Duration>,
     },
     ///  Publisher to send a message to a specific channel.
@@ -55,7 +55,7 @@ enum Command {
         /// Name of channel
         channel: String,
 
-        #[clap(value_parser = bytes_from_str)]
+        #[arg(value_parser = bytes_from_str)]
         /// Message to publish
         message: Bytes,
     },

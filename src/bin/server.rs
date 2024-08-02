@@ -44,9 +44,9 @@ pub async fn main() -> mini_redis::Result<()> {
 }
 
 #[derive(Parser, Debug)]
-#[clap(name = "mini-redis-server", version, author, about = "A Redis server")]
+#[command(name = "mini-redis-server", version, author, about = "A Redis server")]
 struct Cli {
-    #[clap(long)]
+    #[arg(long)]
     port: Option<u16>,
 }
 
