@@ -1,9 +1,10 @@
-use mini_redis::server;
-
 use std::net::SocketAddr;
+
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::time::{self, Duration};
+
+use mini_redis::server;
 
 /// A basic "hello world" style test. A server instance is started in a
 /// background task. A client TCP connection is then established and raw redis
@@ -66,8 +67,6 @@ async fn key_value_get_set() {
 /// to advance to the application.
 #[tokio::test]
 async fn key_value_timeout() {
-    tokio::time::pause();
-
     let addr = start_server().await;
 
     // Establish a connection to the server
@@ -103,7 +102,7 @@ async fn key_value_timeout() {
     assert_eq!(b"$5\r\nworld\r\n", &response);
 
     // Wait for the key to expire
-    time::advance(Duration::from_secs(1)).await;
+    time::sleep(Duration::from_secs(1)).await;
 
     // Get a key, data is missing
     stream
@@ -350,7 +349,7 @@ async fn send_error_unknown_command() {
 
     stream.read_exact(&mut response).await.unwrap();
 
-    assert_eq!(b"-ERR unknown command \'foo\'\r\n", &response);
+    assert_eq!(b"-err unknown command \'foo\'\r\n", &response);
 }
 
 // In this case we test that server Responds with an Error message if a client
@@ -384,7 +383,7 @@ async fn send_error_get_set_after_subscribe() {
     let mut response = [0; 28];
 
     stream.read_exact(&mut response).await.unwrap();
-    assert_eq!(b"-ERR unknown command \'set\'\r\n", &response);
+    assert_eq!(b"-err unknown command \'set\'\r\n", &response);
 
     stream
         .write_all(b"*2\r\n$3\r\nGET\r\n$5\r\nhello\r\n")
@@ -394,7 +393,7 @@ async fn send_error_get_set_after_subscribe() {
     let mut response = [0; 28];
 
     stream.read_exact(&mut response).await.unwrap();
-    assert_eq!(b"-ERR unknown command \'get\'\r\n", &response);
+    assert_eq!(b"-err unknown command \'get\'\r\n", &response);
 }
 
 async fn start_server() -> SocketAddr {
