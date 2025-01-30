@@ -26,6 +26,7 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Command {
+    /// Send a ping message, optionally with custom content.
     Ping {
         /// Message to ping
         msg: Option<Bytes>,
