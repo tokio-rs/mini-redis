@@ -98,7 +98,7 @@ impl Frame {
 
                 Ok(())
             }
-            actual => Err(format!("protocol error; invalid frame type byte `{}`", actual).into()),
+            actual => Err(format!("protocol error; invalid frame type byte `{actual}`").into()),
         }
     }
 
@@ -169,7 +169,7 @@ impl Frame {
 
     /// Converts the frame to an "unexpected frame" error
     pub(crate) fn to_error(&self) -> crate::Error {
-        format!("unexpected frame: {}", self).into()
+        format!("unexpected frame: {self}").into()
     }
 }
 
@@ -189,11 +189,11 @@ impl fmt::Display for Frame {
 
         match self {
             Frame::Simple(response) => response.fmt(fmt),
-            Frame::Error(msg) => write!(fmt, "error: {}", msg),
+            Frame::Error(msg) => write!(fmt, "error: {msg}"),
             Frame::Integer(num) => num.fmt(fmt),
             Frame::Bulk(msg) => match str::from_utf8(msg) {
                 Ok(string) => string.fmt(fmt),
-                Err(_) => write!(fmt, "{:?}", msg),
+                Err(_) => write!(fmt, "{msg:?}"),
             },
             Frame::Null => "(nil)".fmt(fmt),
             Frame::Array(parts) => {
