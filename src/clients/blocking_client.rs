@@ -62,13 +62,11 @@ impl BlockingClient {
     /// ```no_run
     /// use mini_redis::clients::BlockingClient;
     ///
-    /// fn main() {
-    ///     let client = match BlockingClient::connect("localhost:6379") {
-    ///         Ok(client) => client,
-    ///         Err(_) => panic!("failed to establish connection"),
-    ///     };
+    /// let client = match BlockingClient::connect("localhost:6379") {
+    ///     Ok(client) => client,
+    ///     Err(_) => panic!("failed to establish connection"),
+    /// };
     /// # drop(client);
-    /// }
     /// ```
     pub fn connect<T: ToSocketAddrs>(addr: T) -> crate::Result<BlockingClient> {
         let rt = tokio::runtime::Builder::new_current_thread()
@@ -91,12 +89,10 @@ impl BlockingClient {
     /// ```no_run
     /// use mini_redis::clients::BlockingClient;
     ///
-    /// fn main() {
-    ///     let mut client = BlockingClient::connect("localhost:6379").unwrap();
+    /// let mut client = BlockingClient::connect("localhost:6379").unwrap();
     ///
-    ///     let val = client.get("foo").unwrap();
-    ///     println!("Got = {:?}", val);
-    /// }
+    /// let val = client.get("foo").unwrap();
+    /// println!("Got = {val:?}");
     /// ```
     pub fn get(&mut self, key: &str) -> crate::Result<Option<Bytes>> {
         self.rt.block_on(self.inner.get(key))
@@ -117,15 +113,13 @@ impl BlockingClient {
     /// ```no_run
     /// use mini_redis::clients::BlockingClient;
     ///
-    /// fn main() {
-    ///     let mut client = BlockingClient::connect("localhost:6379").unwrap();
+    /// let mut client = BlockingClient::connect("localhost:6379").unwrap();
     ///
-    ///     client.set("foo", "bar".into()).unwrap();
+    /// client.set("foo", "bar".into()).unwrap();
     ///
-    ///     // Getting the value immediately works
-    ///     let val = client.get("foo").unwrap().unwrap();
-    ///     assert_eq!(val, "bar");
-    /// }
+    /// // Getting the value immediately works
+    /// let val = client.get("foo").unwrap().unwrap();
+    /// assert_eq!(val, "bar");
     /// ```
     pub fn set(&mut self, key: &str, value: Bytes) -> crate::Result<()> {
         self.rt.block_on(self.inner.set(key, value))
@@ -153,22 +147,20 @@ impl BlockingClient {
     /// use std::thread;
     /// use std::time::Duration;
     ///
-    /// fn main() {
-    ///     let ttl = Duration::from_millis(500);
-    ///     let mut client = BlockingClient::connect("localhost:6379").unwrap();
+    /// let ttl = Duration::from_millis(500);
+    /// let mut client = BlockingClient::connect("localhost:6379").unwrap();
     ///
-    ///     client.set_expires("foo", "bar".into(), ttl).unwrap();
+    /// client.set_expires("foo", "bar".into(), ttl).unwrap();
     ///
-    ///     // Getting the value immediately works
-    ///     let val = client.get("foo").unwrap().unwrap();
-    ///     assert_eq!(val, "bar");
+    /// // Getting the value immediately works
+    /// let val = client.get("foo").unwrap().unwrap();
+    /// assert_eq!(val, "bar");
     ///
-    ///     // Wait for the TTL to expire
-    ///     thread::sleep(ttl);
+    /// // Wait for the TTL to expire
+    /// thread::sleep(ttl);
     ///
-    ///     let val = client.get("foo").unwrap();
-    ///     assert!(val.is_some());
-    /// }
+    /// let val = client.get("foo").unwrap();
+    /// assert!(val.is_none());
     /// ```
     pub fn set_expires(
         &mut self,
@@ -193,12 +185,10 @@ impl BlockingClient {
     /// ```no_run
     /// use mini_redis::clients::BlockingClient;
     ///
-    /// fn main() {
-    ///     let mut client = BlockingClient::connect("localhost:6379").unwrap();
+    /// let mut client = BlockingClient::connect("localhost:6379").unwrap();
     ///
-    ///     let val = client.publish("foo", "bar".into()).unwrap();
-    ///     println!("Got = {:?}", val);
-    /// }
+    /// let val = client.publish("foo", "bar".into()).unwrap();
+    /// println!("Got = {val:?}");
     /// ```
     pub fn publish(&mut self, channel: &str, message: Bytes) -> crate::Result<u64> {
         self.rt.block_on(self.inner.publish(channel, message))
