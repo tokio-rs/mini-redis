@@ -195,7 +195,7 @@ impl Connection {
             }
             Frame::Integer(val) => {
                 self.stream.write_u8(b':').await?;
-                self.write_decimal(*val).await?;
+                self.write_signed_decimal(*val).await?;
             }
             Frame::Null => {
                 self.stream.write_all(b"$-1\r\n").await?;
@@ -224,6 +224,22 @@ impl Connection {
 
         // Convert the value to a string
         let mut buf = [0u8; 20];
+        let mut buf = Cursor::new(&mut buf[..]);
+        write!(&mut buf, "{}", val)?;
+
+        let pos = buf.position() as usize;
+        self.stream.write_all(&buf.get_ref()[..pos]).await?;
+        self.stream.write_all(b"\r\n").await?;
+
+        Ok(())
+    }
+
+    /// Write a signed decimal frame to the stream
+    async fn write_signed_decimal(&mut self, val: i64) -> io::Result<()> {
+        use std::io::Write;
+
+        // Convert the value to a string (handles negative sign)
+        let mut buf = [0u8; 21];
         let mut buf = Cursor::new(&mut buf[..]);
         write!(&mut buf, "{}", val)?;
 

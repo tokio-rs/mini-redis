@@ -13,6 +13,9 @@ pub use subscribe::{Subscribe, Unsubscribe};
 mod ping;
 pub use ping::Ping;
 
+mod ttl;
+pub use ttl::{Pttl, Ttl};
+
 mod unknown;
 pub use unknown::Unknown;
 
@@ -29,6 +32,8 @@ pub enum Command {
     Subscribe(Subscribe),
     Unsubscribe(Unsubscribe),
     Ping(Ping),
+        Ttl(Ttl),
+        Pttl(Pttl),
     Unknown(Unknown),
 }
 
@@ -63,6 +68,8 @@ impl Command {
             "subscribe" => Command::Subscribe(Subscribe::parse_frames(&mut parse)?),
             "unsubscribe" => Command::Unsubscribe(Unsubscribe::parse_frames(&mut parse)?),
             "ping" => Command::Ping(Ping::parse_frames(&mut parse)?),
+            "ttl" => Command::Ttl(Ttl::parse_frames(&mut parse)?),
+            "pttl" => Command::Pttl(Pttl::parse_frames(&mut parse)?),
             _ => {
                 // The command is not recognized and an Unknown command is
                 // returned.
@@ -101,6 +108,8 @@ impl Command {
             Set(cmd) => cmd.apply(db, dst).await,
             Subscribe(cmd) => cmd.apply(db, dst, shutdown).await,
             Ping(cmd) => cmd.apply(dst).await,
+            Ttl(cmd) => cmd.apply(db, dst).await,
+            Pttl(cmd) => cmd.apply(db, dst).await,
             Unknown(cmd) => cmd.apply(dst).await,
             // `Unsubscribe` cannot be applied. It may only be received from the
             // context of a `Subscribe` command.
@@ -117,6 +126,8 @@ impl Command {
             Command::Subscribe(_) => "subscribe",
             Command::Unsubscribe(_) => "unsubscribe",
             Command::Ping(_) => "ping",
+                Command::Ttl(_) => "ttl",
+                Command::Pttl(_) => "pttl",
             Command::Unknown(cmd) => cmd.get_name(),
         }
     }

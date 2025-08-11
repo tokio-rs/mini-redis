@@ -78,7 +78,7 @@ impl Publish {
 
         // The number of subscribers is returned as the response to the publish
         // request.
-        let response = Frame::Integer(num_subscribers as u64);
+        let response = Frame::Integer(num_subscribers as i64);
 
         // Write the frame to the client.
         dst.write_frame(&response).await?;

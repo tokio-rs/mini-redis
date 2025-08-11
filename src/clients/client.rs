@@ -303,7 +303,7 @@ impl Client {
 
         // Read the response
         match self.read_response().await? {
-            Frame::Integer(response) => Ok(response),
+            Frame::Integer(response) => Ok(response as u64),
             frame => Err(frame.to_error()),
         }
     }

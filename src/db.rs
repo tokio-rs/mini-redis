@@ -218,6 +218,49 @@ impl Db {
         }
     }
 
+    /// Returns the remaining TTL for a key.
+    /// None => key missing or has no expiration.
+    pub(crate) fn ttl(&self, key: &str) -> Option<Duration> {
+        let mut state = self.shared.state.lock().unwrap();
+        if let Some(entry) = state.entries.get(key) {
+            match entry.expires_at {
+                Some(when) => {
+                    let now = Instant::now();
+                    if when <= now {
+                        // expired: remove and return None (key missing)
+                        state.entries.remove(key);
+                        state.expirations.remove(&(when, key.to_string()));
+                        None
+                    } else {
+                        Some(when - now)
+                    }
+                }
+                None => None,
+            }
+        } else {
+            None
+        }
+    }
+
+    /// Returns true if a key exists after performing lazy expiration.
+    pub(crate) fn contains_key(&self, key: &str) -> bool {
+        let mut state = self.shared.state.lock().unwrap();
+        if let Some(entry) = state.entries.get(key) {
+            if let Some(when) = entry.expires_at {
+                let now = Instant::now();
+                if when <= now {
+                    // expired: remove
+                    state.entries.remove(key);
+                    state.expirations.remove(&(when, key.to_string()));
+                    return false;
+                }
+            }
+            true
+        } else {
+            false
+        }
+    }
+
     /// Returns a `Receiver` for the requested channel.
     ///
     /// The returned `Receiver` is used to receive values broadcast by `PUBLISH`
