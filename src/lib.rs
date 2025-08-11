@@ -44,6 +44,9 @@ use db::DbDropGuard;
 mod parse;
 use parse::{Parse, ParseError};
 
+mod pattern;
+pub use pattern::Pattern;
+
 pub mod server;
 
 mod shutdown;

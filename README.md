@@ -59,6 +59,39 @@ cargo run --bin mini-redis-cli set foo bar
 cargo run --bin mini-redis-cli get foo
 ```
 
+## Features
+
+### Core Redis Commands
+
+- **Key-Value Operations**: `GET`, `SET`, `TTL`, `PTTL`
+- **Pub/Sub**: `SUBSCRIBE`, `UNSUBSCRIBE`, `PUBLISH`
+- **Pattern Pub/Sub**: `PSUBSCRIBE`, `PUNSUBSCRIBE` with glob pattern support
+- **Server Info**: `INFO`, `PING`
+- **Connection Management**: `QUIT`
+
+### Pattern-Based Pub/Sub
+
+Mini-Redis supports Redis-compatible pattern-based Pub/Sub using glob patterns:
+
+- `*` matches any sequence of characters
+- `?` matches exactly one character
+- Other characters match literally
+
+Example:
+```bash
+# Subscribe to all news channels
+PSUBSCRIBE news.*
+
+# Subscribe to user channels with single character and "123"
+PSUBSCRIBE user:?123
+
+# Publish messages
+PUBLISH news.sports "Sports update"
+PUBLISH user:a123 "User message"
+```
+
+See [PATTERN_PUBSUB_README.md](PATTERN_PUBSUB_README.md) for detailed documentation.
+
 ## Monitoring with Prometheus and Grafana
 
 This project includes a complete monitoring stack with Prometheus and Grafana:

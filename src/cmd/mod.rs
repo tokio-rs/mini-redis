@@ -10,8 +10,14 @@ pub use set::Set;
 mod subscribe;
 pub use subscribe::{Subscribe, Unsubscribe};
 
+mod psubscribe;
+pub use psubscribe::{PSubscribe, PUnsubscribe};
+
 mod ping;
 pub use ping::Ping;
+
+mod quit;
+pub use quit::Quit;
 
 mod ttl;
 pub use ttl::{Pttl, Ttl};
@@ -34,7 +40,10 @@ pub enum Command {
     Set(Set),
     Subscribe(Subscribe),
     Unsubscribe(Unsubscribe),
+    PSubscribe(PSubscribe),
+    PUnsubscribe(PUnsubscribe),
     Ping(Ping),
+    Quit(Quit),
         Ttl(Ttl),
         Pttl(Pttl),
     Info(Info),
@@ -71,7 +80,10 @@ impl Command {
             "set" => Command::Set(Set::parse_frames(&mut parse)?),
             "subscribe" => Command::Subscribe(Subscribe::parse_frames(&mut parse)?),
             "unsubscribe" => Command::Unsubscribe(Unsubscribe::parse_frames(&mut parse)?),
+            "psubscribe" => Command::PSubscribe(PSubscribe::parse_frames(&mut parse)?),
+            "punsubscribe" => Command::PUnsubscribe(PUnsubscribe::parse_frames(&mut parse)?),
             "ping" => Command::Ping(Ping::parse_frames(&mut parse)?),
+            "quit" => Command::Quit(Quit::parse_frames(&mut parse)?),
             "ttl" => Command::Ttl(Ttl::parse_frames(&mut parse)?),
             "pttl" => Command::Pttl(Pttl::parse_frames(&mut parse)?),
             "info" => Command::Info(Info::parse_frames(&mut parse)?),
@@ -112,14 +124,17 @@ impl Command {
             Publish(cmd) => cmd.apply(db, dst).await,
             Set(cmd) => cmd.apply(db, dst).await,
             Subscribe(cmd) => cmd.apply(db, dst, shutdown).await,
+            PSubscribe(cmd) => cmd.apply(db, dst, shutdown).await,
             Ping(cmd) => cmd.apply(dst).await,
+            Quit(cmd) => cmd.apply(dst).await,
             Ttl(cmd) => cmd.apply(db, dst).await,
             Pttl(cmd) => cmd.apply(db, dst).await,
             Info(cmd) => cmd.apply(db, dst).await,
             Unknown(cmd) => cmd.apply(dst).await,
-            // `Unsubscribe` cannot be applied. It may only be received from the
-            // context of a `Subscribe` command.
+            // `Unsubscribe` and `PUnsubscribe` cannot be applied. They may only be received from the
+            // context of a `Subscribe` or `PSubscribe` command.
             Unsubscribe(_) => Err("`Unsubscribe` is unsupported in this context".into()),
+            PUnsubscribe(_) => Err("`PUnsubscribe` is unsupported in this context".into()),
         }
     }
 
@@ -131,9 +146,12 @@ impl Command {
             Command::Set(_) => "set",
             Command::Subscribe(_) => "subscribe",
             Command::Unsubscribe(_) => "unsubscribe",
+            Command::PSubscribe(_) => "psubscribe",
+            Command::PUnsubscribe(_) => "punsubscribe",
             Command::Ping(_) => "ping",
-                Command::Ttl(_) => "ttl",
-                Command::Pttl(_) => "pttl",
+            Command::Quit(_) => "quit",
+            Command::Ttl(_) => "ttl",
+            Command::Pttl(_) => "pttl",
             Command::Info(_) => "info",
             Command::Unknown(cmd) => cmd.get_name(),
         }

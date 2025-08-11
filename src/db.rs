@@ -4,7 +4,7 @@ use tokio::time::{self, Duration, Instant};
 use bytes::Bytes;
 use std::collections::{BTreeSet, HashMap};
 use std::sync::{Arc, Mutex};
-use crate::Metrics;
+use crate::{Metrics, Pattern};
 
 /// A wrapper around a `Db` instance. This exists to allow orderly cleanup
 /// of the `Db` by signalling the background purge task to shut down when
@@ -69,6 +69,9 @@ struct State {
     /// The pub/sub key-space. Redis uses a **separate** key space for key-value
     /// and pub/sub. `mini-redis` handles this by using a separate `HashMap`.
     pub_sub: HashMap<String, broadcast::Sender<Bytes>>,
+    
+    /// Pattern-based subscriptions for PSUBSCRIBE
+    pattern_subscriptions: Vec<(Pattern, broadcast::Sender<Bytes>)>,
 
     /// Tracks key TTLs.
     ///
@@ -128,6 +131,7 @@ impl Db {
             state: Mutex::new(State {
                 entries: HashMap::new(),
                 pub_sub: HashMap::new(),
+                pattern_subscriptions: Vec::new(),
                 expirations: BTreeSet::new(),
                 shutdown: false,
             }),
@@ -268,6 +272,33 @@ impl Db {
         sender.subscribe()
     }
 
+    /// Subscribe to a pattern.
+    ///
+    /// Returns a receiver that will receive messages published to channels matching the pattern.
+    pub(crate) fn psubscribe(&self, pattern: String) -> broadcast::Receiver<Bytes> {
+        let mut state = self.shared.state.lock().unwrap();
+
+        // Compile the pattern
+        let pattern = match Pattern::new(&pattern) {
+            Ok(p) => p,
+            Err(_) => {
+                // If pattern compilation fails, create a channel that will never receive messages
+                let (_tx, rx) = broadcast::channel(1);
+                return rx;
+            }
+        };
+
+        // Create a new channel for this pattern
+        let (tx, rx) = broadcast::channel(1024);
+        state.pattern_subscriptions.push((pattern, tx));
+
+        // Update metrics
+        self.shared.metrics.inc_sub_count();
+        self.shared.metrics.inc_ops_ok();
+
+        rx
+    }
+
     /// Publish a message to a channel.
     ///
     /// Returns the number of subscribers that received the message.
@@ -276,17 +307,27 @@ impl Db {
 
         // Get the channel
         let sender = state.pub_sub.get(key);
+        let mut total_recipients = 0;
 
         // Update metrics
         self.shared.metrics.inc_pub_count();
         self.shared.metrics.inc_ops_ok();
 
-        // Send the message
+        // Send the message to exact channel subscribers
         if let Some(sender) = sender {
-            sender.send(value).unwrap_or(0)
-        } else {
-            0
+            total_recipients += sender.send(value.clone()).unwrap_or(0);
         }
+
+        // Send the message to pattern subscribers
+        for (pattern, sender) in &state.pattern_subscriptions {
+            if pattern.matches(key) {
+                // Clone the value for each pattern subscriber
+                let _ = sender.send(value.clone());
+                total_recipients += 1;
+            }
+        }
+
+        total_recipients
     }
 
     /// Shutdown the background purge task.
