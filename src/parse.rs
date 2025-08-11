@@ -121,6 +121,23 @@ impl Parse {
         }
     }
 
+    /// Return the next entry as a signed integer.
+    ///
+    /// Accepts `Integer`, `Simple`, and `Bulk` frame types. For `Simple` and
+    /// `Bulk`, the contents are parsed as an `i64`.
+    pub(crate) fn next_i64(&mut self) -> Result<i64, ParseError> {
+        use atoi::atoi;
+
+        const MSG: &str = "protocol error; invalid number";
+
+        match self.next()? {
+            Frame::Integer(v) => Ok(v),
+            Frame::Simple(data) => atoi::<i64>(data.as_bytes()).ok_or_else(|| MSG.into()),
+            Frame::Bulk(data) => atoi::<i64>(&data).ok_or_else(|| MSG.into()),
+            frame => Err(format!("protocol error; expected int frame but got {:?}", frame).into()),
+        }
+    }
+
     /// Ensure there are no more entries in the array
     pub(crate) fn finish(&mut self) -> Result<(), ParseError> {
         if self.parts.next().is_none() {

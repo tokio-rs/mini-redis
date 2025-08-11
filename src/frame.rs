@@ -62,6 +62,20 @@ impl Frame {
         }
     }
 
+    /// Push a signed integer frame into the array. `self` must be an Array frame.
+    ///
+    /// # Panics
+    ///
+    /// panics if `self` is not an array
+    pub(crate) fn push_i64(&mut self, value: i64) {
+        match self {
+            Frame::Array(vec) => {
+                vec.push(Frame::Integer(value));
+            }
+            _ => panic!("not an array frame"),
+        }
+    }
+
     /// Checks if an entire message can be decoded from `src`
     pub fn check(src: &mut Cursor<&[u8]>) -> Result<(), Error> {
         match get_u8(src)? {
