@@ -69,6 +69,7 @@ impl Get {
             Frame::Bulk(value)
         } else {
             // If there is no value, `Null` is written.
+            // Note: Metrics are already tracked in the db.get() method
             Frame::Null
         };
 

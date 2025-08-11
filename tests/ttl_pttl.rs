@@ -12,7 +12,7 @@ async fn start_server() -> (String, oneshot::Sender<()>) {
     tokio::spawn(async move {
         server::run(listener, async move {
             let _ = shutdown_rx.await;
-        })
+        }, None)
         .await;
     });
 

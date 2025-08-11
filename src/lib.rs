@@ -49,10 +49,21 @@ pub mod server;
 mod shutdown;
 use shutdown::Shutdown;
 
+mod metrics;
+pub use metrics::Metrics;
+
+mod metrics_server;
+pub use metrics_server::MetricsServer;
+
 /// Default port that a redis server listens on.
 ///
 /// Used if no port is specified.
 pub const DEFAULT_PORT: u16 = 6379;
+
+/// Default port for the metrics server.
+///
+/// Used if no metrics port is specified.
+pub const DEFAULT_METRICS_PORT: u16 = 9123;
 
 /// Error returned by most functions.
 ///

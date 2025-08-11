@@ -59,6 +59,46 @@ cargo run --bin mini-redis-cli set foo bar
 cargo run --bin mini-redis-cli get foo
 ```
 
+## Monitoring with Prometheus and Grafana
+
+This project includes a complete monitoring stack with Prometheus and Grafana:
+
+### Quick Start
+
+1. **Start everything at once:**
+   ```bash
+   ./setup-complete.sh
+   ```
+
+2. **Or start services individually:**
+   ```bash
+   # Start monitoring stack
+   ./start-monitoring.sh
+   
+   # Start mini-redis with metrics
+   ./run-mini-redis.sh
+   ```
+
+3. **Access the services:**
+   - **Mini-Redis**: localhost:6379
+   - **Metrics**: http://localhost:9123/metrics
+   - **Prometheus**: http://localhost:9090
+   - **Grafana**: http://localhost:3000 (admin/admin)
+
+4. **Stop everything:**
+   ```bash
+   ./stop-all.sh
+   ```
+
+### What's Included
+
+- **Prometheus**: Metrics collection and storage
+- **Grafana**: Pre-configured dashboards for Mini-Redis metrics
+- **Auto-provisioning**: Datasources and dashboards are automatically configured
+- **Metrics endpoint**: Built-in Prometheus metrics at `/metrics`
+
+See [MONITORING_README.md](MONITORING_README.md) for detailed setup instructions.
+
 ## OpenTelemetry
 
 If you are running many instances of your application (which is usually the case

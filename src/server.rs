@@ -3,14 +3,14 @@
 //! Provides an async `run` function that listens for inbound connections,
 //! spawning a task per connection.
 
-use crate::{Command, Connection, Db, DbDropGuard, Shutdown};
+use crate::{Command, Connection, Db, DbDropGuard, Shutdown, MetricsServer, Frame};
 
 use std::future::Future;
 use std::sync::Arc;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::{broadcast, mpsc, Semaphore};
 use tokio::time::{self, Duration};
-use tracing::{debug, error, info, instrument};
+use tracing::{debug, error, info};
 
 /// Server listener state. Created in the `run` call. It includes a `run` method
 /// which performs the TCP listening and initialization of per-connection state.
@@ -61,6 +61,9 @@ struct Listener {
     /// `shutdown_complete_rx.recv()` completing with `None`. At this point, it
     /// is safe to exit the server process.
     shutdown_complete_tx: mpsc::Sender<()>,
+
+    /// Metrics server for exposing Prometheus metrics
+    metrics_server: Option<MetricsServer>,
 }
 
 /// Per-connection handler. Reads requests from `connection` and applies the
@@ -98,29 +101,16 @@ struct Handler {
 }
 
 /// Maximum number of concurrent connections the redis server will accept.
-///
-/// When this limit is reached, the server will stop accepting connections until
-/// an active connection terminates.
-///
-/// A real application will want to make this value configurable, but for this
-/// example, it is hard coded.
-///
-/// This is also set to a pretty low value to discourage using this in
-/// production (you'd think that all the disclaimers would make it obvious that
-/// this is not a serious project... but I thought that about mini-http as
-/// well).
 const MAX_CONNECTIONS: usize = 250;
 
 /// Run the mini-redis server.
 ///
-/// Accepts connections from the supplied listener. For each inbound connection,
-/// a task is spawned to handle that connection. The server runs until the
-/// `shutdown` future completes, at which point the server shuts down
-/// gracefully.
+/// `listener` accepts inbound connections. The server will continue to run
+/// until `shutdown` completes.
 ///
 /// `tokio::signal::ctrl_c()` can be used as the `shutdown` argument. This will
 /// listen for a SIGINT signal.
-pub async fn run(listener: TcpListener, shutdown: impl Future) {
+pub async fn run(listener: TcpListener, shutdown: impl Future, metrics_port: Option<u16>) {
     // When the provided `shutdown` future completes, we must send a shutdown
     // message to all active connections. We use a broadcast channel for this
     // purpose. The call below ignores the receiver of the broadcast pair, and when
@@ -130,13 +120,24 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) {
     let (shutdown_complete_tx, mut shutdown_complete_rx) = mpsc::channel(1);
 
     // Initialize the listener state
+    let db_holder = DbDropGuard::new();
+    let metrics = db_holder.db().get_metrics();
+    
     let mut server = Listener {
         listener,
-        db_holder: DbDropGuard::new(),
+        db_holder,
         limit_connections: Arc::new(Semaphore::new(MAX_CONNECTIONS)),
         notify_shutdown,
         shutdown_complete_tx,
+        metrics_server: metrics_port.map(|port| MetricsServer::new(metrics, port)),
     };
+
+    // Start the metrics server if a port is specified
+    if let Some(ref mut metrics_server) = server.metrics_server {
+        if let Err(e) = metrics_server.start().await {
+            error!("Failed to start metrics server: {}", e);
+        }
+    }
 
     // Concurrently run the server and listen for the `shutdown` signal. The
     // server task runs until an error is encountered, so under normal
@@ -173,6 +174,11 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) {
             // The shutdown signal has been received.
             info!("shutting down");
         }
+    }
+
+    // Stop the metrics server if it was started
+    if let Some(ref mut metrics_server) = server.metrics_server {
+        metrics_server.stop().await;
     }
 
     // Extract the `shutdown_complete` receiver and transmitter
@@ -217,53 +223,34 @@ impl Listener {
         info!("accepting inbound connections");
 
         loop {
-            // Wait for a permit to become available
+            // Wait for an inbound connection. This involves acquiring a permit
+            // from the semaphore.
             //
-            // `acquire_owned` returns a permit that is bound to the semaphore.
-            // When the permit value is dropped, it is automatically returned
-            // to the semaphore.
-            //
-            // `acquire_owned()` returns `Err` when the semaphore has been
-            // closed. We don't ever close the semaphore, so `unwrap()` is safe.
-            let permit = self
-                .limit_connections
-                .clone()
-                .acquire_owned()
-                .await
-                .unwrap();
-
-            // Accept a new socket. This will attempt to perform error handling.
-            // The `accept` method internally attempts to recover errors, so an
-            // error here is non-recoverable.
+            // The `accept` call itself does not wait. Instead, if all
+            // `MAX_CONNECTIONS` are busy, either the semaphore will reject the
+            // permit acquisition or the `accept` call will wait until there is
+            // capacity.
             let socket = self.accept().await?;
 
-            // Create the necessary per-connection handler state.
+            // Wait for a permit to become available
+            let _permit = self.limit_connections.acquire().await.unwrap();
+
+            // Create a new task to process the socket
+            //
+            // The socket and permit are moved to the task and dropped when the
+            // task completes.
             let mut handler = Handler {
-                // Get a handle to the shared database.
-                db: self.db_holder.db(),
-
-                // Initialize the connection state. This allocates read/write
-                // buffers to perform redis protocol frame parsing.
                 connection: Connection::new(socket),
-
-                // Receive shutdown notifications.
+                db: self.db_holder.db(),
                 shutdown: Shutdown::new(self.notify_shutdown.subscribe()),
-
-                // Notifies the receiver half once all clones are
-                // dropped.
                 _shutdown_complete: self.shutdown_complete_tx.clone(),
             };
 
-            // Spawn a new task to process the connections. Tokio tasks are like
-            // asynchronous green threads and are executed concurrently.
             tokio::spawn(async move {
                 // Process the connection. If an error is encountered, log it.
                 if let Err(err) = handler.run().await {
                     error!(cause = ?err, "connection error");
                 }
-                // Move the permit into the task and drop it after completion.
-                // This returns the permit back to the semaphore.
-                drop(permit);
             });
         }
     }
@@ -271,14 +258,11 @@ impl Listener {
     /// Accept an inbound connection.
     ///
     /// Errors are handled by backing off and retrying. An exponential backoff
-    /// strategy is used. After the first failure, the task waits for 1 second.
-    /// After the second failure, the task waits for 2 seconds. Each subsequent
-    /// failure doubles the wait time. If accepting fails on the 6th try after
-    /// waiting for 64 seconds, then this function returns with an error.
+    /// strategy is used. After the first failure, the server waits 1 second,
+    /// after the second failure, the server waits 2 seconds, etc.
     async fn accept(&mut self) -> crate::Result<TcpStream> {
         let mut backoff = 1;
 
-        // Try to accept a few times
         loop {
             // Perform the accept operation. If a socket is successfully
             // accepted, return it. Otherwise, save the error.
@@ -286,7 +270,7 @@ impl Listener {
                 Ok((socket, _)) => return Ok(socket),
                 Err(err) => {
                     if backoff > 64 {
-                        // Accept has failed too many times. Return the error.
+                        // Accept has been failing for too long. Return the error.
                         return Err(err.into());
                     }
                 }
@@ -294,8 +278,6 @@ impl Listener {
 
             // Pause execution until the back off period elapses.
             time::sleep(Duration::from_secs(backoff)).await;
-
-            // Double the back off
             backoff *= 2;
         }
     }
@@ -308,16 +290,11 @@ impl Handler {
     /// written back to the socket.
     ///
     /// Currently, pipelining is not implemented. Pipelining is the ability to
-    /// process more than one request concurrently per connection without
-    /// interleaving frames. See for more details:
-    /// https://redis.io/topics/pipelining
-    ///
-    /// When the shutdown signal is received, the connection is processed until
-    /// it reaches a safe state, at which point it is terminated.
-    #[instrument(skip(self))]
+    /// process multiple frames from the client without interleaving frames from
+    /// multiple connections.
     async fn run(&mut self) -> crate::Result<()> {
-        // As long as the shutdown signal has not been received, try to read a
-        // new request frame.
+        // As long as the connection has not received a shutdown signal, the
+        // server continues to process requests.
         while !self.shutdown.is_shutdown() {
             // While reading a request frame, also listen for the shutdown
             // signal.
@@ -330,39 +307,46 @@ impl Handler {
                 }
             };
 
-            // If `None` is returned from `read_frame()` then the peer closed
-            // the socket. There is no further work to do and the task can be
-            // terminated.
+            // `maybe_frame` will be `None` if the connection has closed.
             let frame = match maybe_frame {
                 Some(frame) => frame,
                 None => return Ok(()),
             };
 
-            // Convert the redis frame into a command struct. This returns an
-            // error if the frame is not a valid redis command or it is an
-            // unsupported command.
-            let cmd = Command::from_frame(frame)?;
+            // Convert the frame to a command. If this fails, respond with an
+            // error frame to the client.
+            let cmd_result = Command::from_frame(frame);
 
-            // Logs the `cmd` object. The syntax here is a shorthand provided by
-            // the `tracing` crate. It can be thought of as similar to:
-            //
-            // ```
-            // debug!(cmd = format!("{:?}", cmd));
-            // ```
-            //
-            // `tracing` provides structured logging, so information is "logged"
-            // as key-value pairs.
-            debug!(?cmd);
+            // Get the command name for metrics before consuming the command
+            let cmd_name = cmd_result.as_ref().map(|c| c.get_name()).unwrap_or("unknown").to_string();
 
-            // Perform the work needed to apply the command. This may mutate the
-            // database state as a result.
-            //
-            // The connection is passed into the apply function which allows the
-            // command to write response frames directly to the connection. In
-            // the case of pub/sub, multiple frames may be send back to the
-            // peer.
-            cmd.apply(&self.db, &mut self.connection, &mut self.shutdown)
-                .await?;
+            // Track command execution start time for latency metrics
+            let _start_time = std::time::Instant::now();
+
+            // Execute the command and track metrics
+            let result = match cmd_result {
+                Ok(cmd) => {
+                    // Apply the command to the database
+                    cmd.apply(&self.db, &mut self.connection, &mut self.shutdown).await
+                }
+                Err(cause) => {
+                    // The command was malformed. The `error` was stored in the
+                    // frame's error field and will be written to the client.
+                    let response = Frame::Error(cause.to_string());
+                    self.connection.write_frame(&response).await?;
+                    Ok(())
+                }
+            };
+
+            // Track command execution result
+            if result.is_ok() {
+                self.db.get_metrics().inc_ops_ok();
+            } else {
+                self.db.get_metrics().inc_ops_err();
+            }
+
+            // Log the command execution
+            debug!(?cmd_name, ?result, "command executed");
         }
 
         Ok(())

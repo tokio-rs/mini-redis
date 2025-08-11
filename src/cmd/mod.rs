@@ -19,6 +19,9 @@ pub use ttl::{Pttl, Ttl};
 mod unknown;
 pub use unknown::Unknown;
 
+mod info;
+pub use info::Info;
+
 use crate::{Connection, Db, Frame, Parse, ParseError, Shutdown};
 
 /// Enumeration of supported Redis commands.
@@ -34,6 +37,7 @@ pub enum Command {
     Ping(Ping),
         Ttl(Ttl),
         Pttl(Pttl),
+    Info(Info),
     Unknown(Unknown),
 }
 
@@ -70,6 +74,7 @@ impl Command {
             "ping" => Command::Ping(Ping::parse_frames(&mut parse)?),
             "ttl" => Command::Ttl(Ttl::parse_frames(&mut parse)?),
             "pttl" => Command::Pttl(Pttl::parse_frames(&mut parse)?),
+            "info" => Command::Info(Info::parse_frames(&mut parse)?),
             _ => {
                 // The command is not recognized and an Unknown command is
                 // returned.
@@ -110,6 +115,7 @@ impl Command {
             Ping(cmd) => cmd.apply(dst).await,
             Ttl(cmd) => cmd.apply(db, dst).await,
             Pttl(cmd) => cmd.apply(db, dst).await,
+            Info(cmd) => cmd.apply(db, dst).await,
             Unknown(cmd) => cmd.apply(dst).await,
             // `Unsubscribe` cannot be applied. It may only be received from the
             // context of a `Subscribe` command.
@@ -128,6 +134,7 @@ impl Command {
             Command::Ping(_) => "ping",
                 Command::Ttl(_) => "ttl",
                 Command::Pttl(_) => "pttl",
+            Command::Info(_) => "info",
             Command::Unknown(cmd) => cmd.get_name(),
         }
     }
