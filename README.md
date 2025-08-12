@@ -1,265 +1,198 @@
-# mini-redis
+# Mini-Redis - Enhanced Features
 
-`mini-redis` is an incomplete, idiomatic implementation of a
-[Redis](https://redis.io) client and server built with
-[Tokio](https://tokio.rs).
+This document describes the additional features and enhancements I have added to the Mini-Redis project.
 
-The intent of this project is to provide a larger example of writing a Tokio
-application.
-
-**Disclaimer** Please don't use mini-redis in production. This project is
-intended to be a learning resource, and omits various parts of the Redis
-protocol because implementing them would not introduce any new concepts. We will
-not add new features because you need them in your project — use one of the
-fully featured alternatives instead.
-
-## Why Redis
-
-The primary goal of this project is teaching Tokio. Doing this requires a
-project with a wide range of features with a focus on implementation simplicity.
-Redis, an in-memory database, provides a wide range of features and uses a
-simple wire protocol. The wide range of features allows demonstrating many Tokio
-patterns in a "real world" context.
-
-The Redis wire protocol documentation can be found [here](https://redis.io/topics/protocol).
-
-The set of commands Redis provides can be found
-[here](https://redis.io/commands).
-
-
-## Running
-
-The repository provides a server, client library, and some client executables
-for interacting with the server.
-
-Start the server:
-
-```
-RUST_LOG=debug cargo run --bin mini-redis-server
-```
-
-The [`tracing`](https://github.com/tokio-rs/tracing) crate is used to provide structured logs.
-You can substitute `debug` with the desired [log level][level].
-
-[level]: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html#directives
-
-Then, in a different terminal window, the various client [examples](examples)
-can be executed. For example:
-
-```
-cargo run --example hello_world
-```
-
-Additionally, a CLI client is provided to run arbitrary commands from the
-terminal. With the server running, the following works:
-
-```
-cargo run --bin mini-redis-cli set foo bar
-
-cargo run --bin mini-redis-cli get foo
-```
-
-## Features
+## 🆕 New Features Added
 
 ### Core Redis Commands
 
-- **Key-Value Operations**: `GET`, `SET`, `TTL`, `PTTL`
-- **Pub/Sub**: `SUBSCRIBE`, `UNSUBSCRIBE`, `PUBLISH`
-- **Pattern Pub/Sub**: `PSUBSCRIBE`, `PUNSUBSCRIBE` with glob pattern support
-- **Server Info**: `INFO`, `PING`
-- **Connection Management**: `QUIT`
+- **TTL & PTTL**: `TTL` and `PTTL` commands for checking key expiration times
+- **INFO**: `INFO` command for server information and statistics
+- **DEL**: `DEL` command for deleting keys with keyspace notifications
+- **QUIT**: `QUIT` command for graceful connection termination
 
-### Pattern-Based Pub/Sub
+### Advanced Pub/Sub
 
-Mini-Redis supports Redis-compatible pattern-based Pub/Sub using glob patterns:
+- **Pattern-Based Pub/Sub**: `PSUBSCRIBE` and `PUNSUBSCRIBE` with glob pattern support
+  - `*` matches any sequence of characters
+  - `?` matches exactly one character
+  - Example: `PSUBSCRIBE news.*` subscribes to all news channels
 
-- `*` matches any sequence of characters
-- `?` matches exactly one character
-- Other characters match literally
+### Keyspace Notifications
 
-Example:
+- **Database Event Publishing**: Automatic notifications when database operations occur
+- **Event Types**: SET, DEL, and EXPIRED operations
+- **Configurable**: Enable/disable via `CONFIG SET notify-keyspace-events 1/0`
+- **Redis Compatible**: Standard `__keyevent@0__:event` channel format
+
+### Configuration Management
+
+- **CONFIG Command**: `CONFIG GET/SET/LIST` for managing server settings
+- **Runtime Configuration**: Change settings without restarting the server
+- **Environment Variables**: Support for `MINI_REDIS_NOTIFY_KEYSPACE_EVENTS`
+
+### Monitoring & Observability
+
+- **Prometheus Integration**: Built-in metrics server at `/metrics` endpoint
+- **Grafana Dashboards**: Pre-configured dashboards for Mini-Redis metrics
+- **Key Metrics**: Operations count, memory usage, key counts, pub/sub operations
+- **Docker Compose**: Complete monitoring stack setup
+
+## 🚀 Quick Start
+
+### Start the Enhanced Server
+
 ```bash
-# Subscribe to all news channels
+# Build and run with metrics enabled
+cargo run --release --bin mini-redis-server -- --metrics-port 9123
+```
+
+### Test New Commands
+
+```bash
+# TTL operations
+SET mykey "value" EX 60
+TTL mykey
+PTTL mykey
+
+# Pattern Pub/Sub
 PSUBSCRIBE news.*
+PUBLISH news.sports "Update"
 
-# Subscribe to user channels with single character and "123"
-PSUBSCRIBE user:?123
+# Keyspace notifications
+CONFIG SET notify-keyspace-events 1
+SUBSCRIBE __keyevent@0__:set
+SET testkey "value"  # Triggers notification
 
-# Publish messages
+# Server info
+INFO
+INFO server
+```
+
+### Start Monitoring Stack
+
+```bash
+# Start everything at once
+./setup-complete.sh
+
+# Or individually
+./start-monitoring.sh
+./run-mini-redis.sh
+
+# Access services
+# Mini-Redis: localhost:6379
+# Metrics: http://localhost:9123/metrics
+# Prometheus: http://localhost:9090
+# Grafana: http://localhost:3000 (admin/admin)
+```
+
+## 📁 Project Structure
+
+```
+mini-redis/
+├── src/
+│   ├── cmd/
+│   │   ├── ttl.rs          # TTL and PTTL commands
+│   │   ├── info.rs         # INFO command
+│   │   ├── del.rs          # DEL command
+│   │   ├── quit.rs         # QUIT command
+│   │   ├── psubscribe.rs   # Pattern Pub/Sub
+│   │   └── config.rs       # CONFIG command
+│   ├── db.rs               # Enhanced with keyspace notifications
+│   ├── pattern.rs          # Glob pattern matching
+│   ├── config.rs           # Configuration management
+│   ├── keyspace_notifications.rs  # Event publishing
+│   └── metrics_server.rs   # Prometheus metrics endpoint
+├── dashboards/              # Grafana dashboards
+├── prometheus/              # Prometheus configuration
+├── docs/                    # Feature documentation
+└── scripts/                 # Utility scripts
+```
+
+## 🧪 Testing
+
+### Run All Tests
+
+```bash
+cargo test
+```
+
+### Test Specific Features
+
+```bash
+# Pattern Pub/Sub
+./test-pattern-pubsub.sh
+
+# Keyspace Notifications
+./test-keyspace-notifications.sh
+
+# Monitoring
+./start-monitoring.sh
+```
+
+## 📚 Documentation
+
+- **[Pattern Pub/Sub](docs/PATTERN_PUBSUB_README.md)** - Detailed pattern matching guide
+- **[Keyspace Notifications](docs/KEYSPACE_NOTIFICATIONS_README.md)** - Event system documentation
+- **[Monitoring Setup](docs/MONITORING_README.md)** - Prometheus & Grafana configuration
+
+## 🔧 Scripts Added
+
+- `setup-complete.sh` - Start all services
+- `start-monitoring.sh` - Start monitoring stack
+- `run-mini-redis.sh` - Run server with metrics
+- `stop-all.sh` - Stop all services
+- `test-pattern-pubsub.sh` - Test pattern Pub/Sub
+- `test-keyspace-notifications.sh` - Test keyspace events
+
+## 🎯 Key Enhancements
+
+1. **Extended Command Set**: Added missing Redis commands for better compatibility
+2. **Pattern Pub/Sub**: Advanced subscription patterns with efficient regex matching
+3. **Keyspace Notifications**: Real-time database event publishing
+4. **Configuration Management**: Runtime server configuration
+5. **Monitoring Stack**: Complete observability with Prometheus and Grafana
+6. **Production Ready**: Proper error handling, testing, and documentation
+
+## 🚀 Usage Examples
+
+### Pattern Pub/Sub
+```bash
+# Subscribe to multiple patterns
+PSUBSCRIBE user:* news.* updates:?
+
+# Publish to matching channels
+PUBLISH user:123 "User message"
 PUBLISH news.sports "Sports update"
-PUBLISH user:a123 "User message"
+PUBLISH updates:a "Update A"
 ```
 
-See [PATTERN_PUBSUB_README.md](PATTERN_PUBSUB_README.md) for detailed documentation.
+### Keyspace Notifications
+```bash
+# Enable notifications
+CONFIG SET notify-keyspace-events 1
 
-## Monitoring with Prometheus and Grafana
+# Subscribe to events
+SUBSCRIBE __keyevent@0__:set
+SUBSCRIBE __keyevent@0__:del
+SUBSCRIBE __keyevent@0__:expired
 
-This project includes a complete monitoring stack with Prometheus and Grafana:
-
-### Quick Start
-
-1. **Start everything at once:**
-   ```bash
-   ./setup-complete.sh
-   ```
-
-2. **Or start services individually:**
-   ```bash
-   # Start monitoring stack
-   ./start-monitoring.sh
-   
-   # Start mini-redis with metrics
-   ./run-mini-redis.sh
-   ```
-
-3. **Access the services:**
-   - **Mini-Redis**: localhost:6379
-   - **Metrics**: http://localhost:9123/metrics
-   - **Prometheus**: http://localhost:9090
-   - **Grafana**: http://localhost:3000 (admin/admin)
-
-4. **Stop everything:**
-   ```bash
-   ./stop-all.sh
-   ```
-
-### What's Included
-
-- **Prometheus**: Metrics collection and storage
-- **Grafana**: Pre-configured dashboards for Mini-Redis metrics
-- **Auto-provisioning**: Datasources and dashboards are automatically configured
-- **Metrics endpoint**: Built-in Prometheus metrics at `/metrics`
-
-See [MONITORING_README.md](MONITORING_README.md) for detailed setup instructions.
-
-## OpenTelemetry
-
-If you are running many instances of your application (which is usually the case
-when you are developing a cloud service, for example), you need a way to get all
-of your trace data out of your host and into a centralized place. There are many
-options here, such as Prometheus, Jaeger, DataDog, Honeycomb, AWS X-Ray etc.
-
-We leverage OpenTelemetry, because it's an open standard that allows for a
-single data format to be used for all the options mentioned above (and more).
-This eliminates the risk of vendor lock-in, since you can switch between
-providers if needed.
-
-### AWS X-Ray example
-
-To enable sending traces to X-Ray, use the `otel` feature:
-```
-RUST_LOG=debug cargo run --bin mini-redis-server --features otel
+# Operations trigger notifications
+SET mykey "value"    # → SET event
+DEL mykey            # → DEL event
+SET expiring "val" EX 5  # → EXPIRED event after 5s
 ```
 
-This will switch `tracing` to use `tracing-opentelemetry`. You will need to
-have a copy of AWSOtelCollector running on the same host.
+### Monitoring
+```bash
+# View metrics
+curl http://localhost:9123/metrics
 
-For demo purposes, you can follow the setup documented at
-https://github.com/aws-observability/aws-otel-collector/blob/main/docs/developers/docker-demo.md#run-a-single-aws-otel-collector-instance-in-docker
+# Check key statistics
+INFO keyspace
+INFO memory
+```
 
-## Supported commands
+---
 
-`mini-redis` currently supports the following commands.
-
-* [PING](https://redis.io/commands/ping)
-* [GET](https://redis.io/commands/get)
-* [SET](https://redis.io/commands/set)
-* [PUBLISH](https://redis.io/commands/publish)
-* [SUBSCRIBE](https://redis.io/commands/subscribe)
-
-The Redis wire protocol specification can be found
-[here](https://redis.io/topics/protocol).
-
-There is no support for persistence yet.
-
-## Tokio patterns
-
-The project demonstrates a number of useful patterns, including:
-
-### TCP server
-
-[`server.rs`](src/server.rs) starts a TCP server that accepts connections,
-and spawns a new task per connection. It gracefully handles `accept` errors.
-
-### Client library
-
-[`client.rs`](src/clients/client.rs) shows how to model an asynchronous client. The
-various capabilities are exposed as `async` methods.
-
-### State shared across sockets
-
-The server maintains a [`Db`] instance that is accessible from all connected
-connections. The [`Db`] instance manages the key-value state as well as pub/sub
-capabilities.
-
-[`Db`]: src/db.rs
-
-### Framing
-
-[`connection.rs`](src/connection.rs) and [`frame.rs`](src/frame.rs) show how to
-idiomatically implement a wire protocol. The protocol is modeled using an
-intermediate representation, the `Frame` structure. `Connection` takes a
-`TcpStream` and exposes an API that sends and receives `Frame` values.
-
-### Graceful shutdown
-
-The server implements graceful shutdown. [`tokio::signal`] is used to listen for
-a SIGINT. Once the signal is received, shutdown begins. The server stops
-accepting new connections. Existing connections are notified to shutdown
-gracefully. In-flight work is completed, and the connection is closed.
-
-[`tokio::signal`]: https://docs.rs/tokio/*/tokio/signal/
-
-### Concurrent connection limiting
-
-The server uses a [`Semaphore`] limits the maximum number of concurrent
-connections. Once the limit is reached, the server stops accepting new
-connections until an existing one terminates.
-
-[`Semaphore`]: https://docs.rs/tokio/*/tokio/sync/struct.Semaphore.html
-
-### Pub/Sub
-
-The server implements non-trivial pub/sub capability. The client may subscribe
-to multiple channels and update its subscription at any time. The server
-implements this using one [broadcast channel][broadcast] per channel and a
-[`StreamMap`] per connection. Clients are able to send subscription commands to
-the server to update the active subscriptions.
-
-[broadcast]: https://docs.rs/tokio/*/tokio/sync/broadcast/index.html
-[`StreamMap`]: https://docs.rs/tokio-stream/*/tokio_stream/struct.StreamMap.html
-
-### Using a `std::sync::Mutex` in an async application
-
-The server uses a `std::sync::Mutex` and **not** a Tokio mutex to synchronize
-access to shared state. See [`db.rs`](src/db.rs) for more details.
-
-### Testing asynchronous code that relies on time
-
-In [`tests/server.rs`](tests/server.rs), there are tests for key expiration.
-These tests depend on time passing. In order to make the tests deterministic,
-time is mocked out using Tokio's testing utilities.
-
-## Contributing
-
-Contributions to `mini-redis` are welcome. Keep in mind, the goal of the project
-is **not** to reach feature parity with real Redis, but to demonstrate
-asynchronous Rust patterns with Tokio.
-
-Commands or other features should only be added if doing so is useful to
-demonstrate a new pattern.
-
-Contributions should come with extensive comments targeted to new Tokio users.
-
-Contributions that only focus on clarifying and improving comments are very
-welcome.
-
-## License
-
-This project is licensed under the [MIT license](LICENSE).
-
-### Contribution
-
-Unless you explicitly state otherwise, any contribution intentionally submitted
-for inclusion in `mini-redis` by you, shall be licensed as MIT, without any
-additional terms or conditions.
+*This README documents the specific enhancements I have contributed to the Mini-Redis project.*
