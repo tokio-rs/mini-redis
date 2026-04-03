@@ -78,9 +78,18 @@ impl Frame {
                 Ok(())
             }
             b'$' => {
+                // Bulk strings in the RESP protocol.
+                //
+                // Format: $<length>\r\n<data>\r\n
+                //
+                // Special case: $-1\r\n represents a Null value.
+                // Validates that the frame conforms to RESP protocol.
                 if b'-' == peek_u8(src)? {
-                    // Skip '-1\r\n'
-                    skip(src, 4)
+                    let line = get_line(src)?;
+                    if line != b"-1" {
+                        return Err("protocol error; invalid frame format".into());
+                    }
+                    Ok(())
                 } else {
                     // Read the bulk string
                     let len: usize = get_decimal(src)?.try_into()?;
