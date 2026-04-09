@@ -397,6 +397,45 @@ async fn send_error_get_set_after_subscribe() {
     assert_eq!(b"-ERR unknown command \'get\'\r\n", &response);
 }
 
+// In this case we test that server responds with an Error message mentioning
+// PUBLISH if a client sends PUBLISH after SUBSCRIBE.
+#[tokio::test]
+async fn send_error_publish_after_subscribe() {
+    let addr = start_server().await;
+
+    let mut stream = TcpStream::connect(addr).await.unwrap();
+
+    stream
+        .write_all(b"*2\r\n$9\r\nsubscribe\r\n$5\r\nhello\r\n")
+        .await
+        .unwrap();
+
+    let mut response = [0; 34];
+
+    stream.read_exact(&mut response).await.unwrap();
+
+    assert_eq!(
+        &b"*3\r\n$9\r\nsubscribe\r\n$5\r\nhello\r\n:1\r\n"[..],
+        &response[..]
+    );
+
+    stream
+        .write_all(b"*3\r\n$7\r\nPUBLISH\r\n$5\r\nhello\r\n$5\r\nworld\r\n")
+        .await
+        .unwrap();
+
+    let mut response = [0; 32];
+    let bytes_read = time::timeout(Duration::from_secs(1), stream.read(&mut response))
+        .await
+        .unwrap()
+        .unwrap();
+
+    assert_eq!(
+        b"-ERR unknown command \'publish\'\r\n",
+        &response[..bytes_read]
+    );
+}
+
 async fn start_server() -> SocketAddr {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
