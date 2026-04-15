@@ -225,7 +225,7 @@ impl Connection {
         // Convert the value to a string
         let mut buf = [0u8; 20];
         let mut buf = Cursor::new(&mut buf[..]);
-        write!(&mut buf, "{}", val)?;
+        write!(&mut buf, "{val}")?;
 
         let pos = buf.position() as usize;
         self.stream.write_all(&buf.get_ref()[..pos]).await?;
