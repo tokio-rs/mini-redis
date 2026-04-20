@@ -8,7 +8,7 @@ use crate::{Command, Connection, Db, DbDropGuard, Shutdown};
 use std::future::Future;
 use std::sync::Arc;
 use tokio::net::{TcpListener, TcpStream};
-use tokio::sync::{broadcast, mpsc, Semaphore};
+use tokio::sync::{Semaphore, broadcast, mpsc};
 use tokio::time::{self, Duration};
 use tracing::{debug, error, info, instrument};
 
@@ -265,6 +265,11 @@ impl Listener {
                 // This returns the permit back to the semaphore.
                 drop(permit);
             });
+
+            // Yield once per loop iteration. Under heavy connection load, the
+            // listener may stay ready on every poll, so this task might
+            // otherwise never yield back to the executor.
+            tokio::task::yield_now().await
         }
     }
 
@@ -363,6 +368,11 @@ impl Handler {
             // peer.
             cmd.apply(&self.db, &mut self.connection, &mut self.shutdown)
                 .await?;
+
+            // Yield once per loop iteration. Under sustained throughput, the
+            // connection may stay ready on every poll, so this task might
+            // otherwise never yield back to the executor.
+            tokio::task::yield_now().await
         }
 
         Ok(())
