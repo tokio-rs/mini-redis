@@ -273,6 +273,33 @@ impl Db {
         state.entries.len()
     }
 
+    pub(crate) fn incr(&self, key: &str) -> crate::Result<u64> {
+        let mut state = self.shared.state.lock().unwrap();
+        if let Some(entry) = state.entries.get_mut(key) {
+            let current = str::from_utf8(&entry.data)
+                .map_err(|_| "ERR value is not an integer or out of range")?
+                .parse::<u64>()
+                .map_err(|_| "ERR value is not an integer or out of range")?;
+
+            let next = current
+                .checked_add(1)
+                .ok_or("ERR value is not an integer or out of range")?;
+            entry.data = Bytes::from(next.to_string());
+
+            Ok(next)
+        } else {
+            state.entries.insert(
+                key.to_string(),
+                Entry {
+                    data: Bytes::from("1"),
+                    expires_at: None,
+                },
+            );
+
+            Ok(1)
+        }
+    }
+
     /// Signals the purge background task to shut down. This is called by the
     /// `DbShutdown`s `Drop` implementation.
     fn shutdown_purge_task(&self) {

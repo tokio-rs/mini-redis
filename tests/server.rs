@@ -152,6 +152,27 @@ async fn incr_rejects_non_integer_values() {
     }
 }
 
+/// Overflow is reported as a Redis error and must not modify the stored value.
+#[tokio::test]
+async fn incr_rejects_overflow() {
+    const MAX: &str = "18446744073709551615";
+
+    let addr = start_server().await;
+    assert_simple_response(send_command(addr, &["SET", "counter", MAX]).await, "OK");
+
+    match send_command(addr, &["INCR", "counter"]).await {
+        Frame::Error(message) => {
+            assert_eq!("ERR value is not an integer or out of range", message)
+        }
+        frame => panic!("expected an overflow error frame, got {:?}", frame),
+    }
+
+    match send_command(addr, &["GET", "counter"]).await {
+        Frame::Bulk(value) => assert_eq!(MAX.as_bytes(), &value[..]),
+        frame => panic!("expected the original maximum value, got {:?}", frame),
+    }
+}
+
 /// `INCR` modifies a value in place, so an existing expiration must be kept.
 #[tokio::test]
 async fn incr_preserves_expiration() {
@@ -167,6 +188,10 @@ async fn incr_preserves_expiration() {
         42,
         integer_response(send_command(addr, &["INCR", "counter"]).await)
     );
+    match send_command(addr, &["GET", "counter"]).await {
+        Frame::Bulk(value) => assert_eq!(b"42", &value[..]),
+        frame => panic!("expected the incremented bulk value, got {:?}", frame),
+    }
 
     time::advance(Duration::from_secs(1)).await;
 

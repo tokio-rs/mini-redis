@@ -1,3 +1,6 @@
+mod incr;
+pub use incr::Incr;
+
 mod dbsize;
 pub use dbsize::DbSize;
 
@@ -26,6 +29,7 @@ use crate::{Connection, Db, Frame, Parse, ParseError, Shutdown};
 /// Methods called on `Command` are delegated to the command implementation.
 #[derive(Debug)]
 pub enum Command {
+    Incr(Incr),
     DbSize(DbSize),
     Get(Get),
     Publish(Publish),
@@ -61,6 +65,7 @@ impl Command {
         // Match the command name, delegating the rest of the parsing to the
         // specific command.
         let command = match &command_name[..] {
+            "incr" => Command::Incr(Incr::parse_frames(&mut parse)?),
             "dbsize" => Command::DbSize(DbSize::parse_frames(&parse)?),
             "get" => Command::Get(Get::parse_frames(&mut parse)?),
             "publish" => Command::Publish(Publish::parse_frames(&mut parse)?),
@@ -101,6 +106,7 @@ impl Command {
         use Command::*;
 
         match self {
+            Incr(cmd) => cmd.apply(db, dst).await,
             DbSize(cmd) => cmd.apply(db, dst).await,
             Get(cmd) => cmd.apply(db, dst).await,
             Publish(cmd) => cmd.apply(db, dst).await,
@@ -117,6 +123,7 @@ impl Command {
     /// Returns the command name
     pub(crate) fn get_name(&self) -> &str {
         match self {
+            Command::Incr(_) => "incr",
             Command::DbSize(_) => "dbsize",
             Command::Get(_) => "get",
             Command::Publish(_) => "publish",
