@@ -1,4 +1,5 @@
-use mini_redis::server;
+use bytes::Bytes;
+use mini_redis::{server, Connection, Frame};
 
 use std::net::SocketAddr;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -105,6 +106,102 @@ async fn dbsize_counts_keys() {
     let mut response = [0; 4];
     stream.read_exact(&mut response).await.unwrap();
     assert_eq!(b":2\r\n", &response);
+}
+
+/// `INCR` starts a missing key at zero and atomically increments integer values.
+#[tokio::test]
+async fn incr_increments_integer_values() {
+    let addr = start_server().await;
+
+    assert_eq!(
+        1,
+        integer_response(send_command(addr, &["INCR", "counter"]).await)
+    );
+    assert_eq!(
+        2,
+        integer_response(send_command(addr, &["INCR", "counter"]).await)
+    );
+
+    assert_simple_response(send_command(addr, &["SET", "existing", "41"]).await, "OK");
+    assert_eq!(
+        42,
+        integer_response(send_command(addr, &["INCR", "existing"]).await)
+    );
+}
+
+/// Incrementing a non-integer returns an error and leaves the value unchanged.
+#[tokio::test]
+async fn incr_rejects_non_integer_values() {
+    let addr = start_server().await;
+
+    assert_simple_response(
+        send_command(addr, &["SET", "counter", "not-a-number"]).await,
+        "OK",
+    );
+
+    match send_command(addr, &["INCR", "counter"]).await {
+        Frame::Error(message) => {
+            assert_eq!("ERR value is not an integer or out of range", message)
+        }
+        frame => panic!("expected an error frame, got {:?}", frame),
+    }
+
+    match send_command(addr, &["GET", "counter"]).await {
+        Frame::Bulk(value) => assert_eq!(b"not-a-number", &value[..]),
+        frame => panic!("expected the original bulk value, got {:?}", frame),
+    }
+}
+
+/// `INCR` modifies a value in place, so an existing expiration must be kept.
+#[tokio::test]
+async fn incr_preserves_expiration() {
+    tokio::time::pause();
+
+    let addr = start_server().await;
+
+    assert_simple_response(
+        send_command(addr, &["SET", "counter", "41", "PX", "1000"]).await,
+        "OK",
+    );
+    assert_eq!(
+        42,
+        integer_response(send_command(addr, &["INCR", "counter"]).await)
+    );
+
+    time::advance(Duration::from_secs(1)).await;
+
+    match send_command(addr, &["GET", "counter"]).await {
+        Frame::Null => {}
+        frame => panic!("expected the incremented key to expire, got {:?}", frame),
+    }
+}
+
+/// Concurrent clients must not lose increments through a read-modify-write race.
+#[tokio::test]
+async fn incr_is_atomic_across_connections() {
+    const CLIENTS: u64 = 100;
+
+    let addr = start_server().await;
+    let mut tasks = Vec::with_capacity(CLIENTS as usize);
+
+    for _ in 0..CLIENTS {
+        tasks.push(tokio::spawn(async move {
+            integer_response(send_command(addr, &["INCR", "counter"]).await)
+        }));
+    }
+
+    let mut observed = Vec::with_capacity(CLIENTS as usize);
+    for task in tasks {
+        observed.push(task.await.unwrap());
+    }
+    observed.sort_unstable();
+
+    assert_eq!((1..=CLIENTS).collect::<Vec<_>>(), observed);
+
+    match send_command(addr, &["GET", "counter"]).await {
+        Frame::Bulk(value) => assert_eq!(CLIENTS.to_string().as_bytes(), &value[..]),
+        frame => panic!("expected the final counter value, got {:?}", frame),
+    }
 }
 
 /// Similar to the basic key-value test, however, this time timeouts will be
@@ -494,4 +591,32 @@ async fn start_server() -> SocketAddr {
     tokio::spawn(async move { server::run(listener, tokio::signal::ctrl_c()).await });
 
     addr
+}
+
+async fn send_command(addr: SocketAddr, parts: &[&str]) -> Frame {
+    let socket = TcpStream::connect(addr).await.unwrap();
+    let mut connection = Connection::new(socket);
+    let frame = Frame::Array(
+        parts
+            .iter()
+            .map(|part| Frame::Bulk(Bytes::copy_from_slice(part.as_bytes())))
+            .collect(),
+    );
+
+    connection.write_frame(&frame).await.unwrap();
+    connection.read_frame().await.unwrap().unwrap()
+}
+
+fn integer_response(frame: Frame) -> u64 {
+    match frame {
+        Frame::Integer(value) => value,
+        frame => panic!("expected an integer frame, got {:?}", frame),
+    }
+}
+
+fn assert_simple_response(frame: Frame, expected: &str) {
+    match frame {
+        Frame::Simple(value) => assert_eq!(expected, value),
+        frame => panic!("expected a simple frame, got {:?}", frame),
+    }
 }
