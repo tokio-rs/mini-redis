@@ -270,7 +270,7 @@ impl Db {
 
     pub(crate) fn size(&self) -> usize {
         let state = self.shared.state.lock().unwrap();
-        state.entries.len().clone()
+        state.entries.len()
     }
 
     /// Signals the purge background task to shut down. This is called by the

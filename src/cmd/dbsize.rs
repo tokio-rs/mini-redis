@@ -3,9 +3,7 @@ use crate::{Connection, Db, Frame, Parse};
 use tracing::{debug, instrument};
 
 #[derive(Debug)]
-pub struct DbSize {
-
-}
+pub struct DbSize {}
 
 impl DbSize {
     pub(crate) fn parse_frames(_: &Parse) -> crate::Result<DbSize> {
