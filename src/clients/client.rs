@@ -2,7 +2,7 @@
 //!
 //! Provides an async connect and methods for issuing the supported commands.
 
-use crate::cmd::{Get, Ping, Publish, Set, Subscribe, Unsubscribe};
+use crate::cmd::{DbSize, Get, Ping, Publish, Set, Subscribe, Unsubscribe};
 use crate::{Connection, Frame};
 
 use async_stream::try_stream;
@@ -52,6 +52,19 @@ pub struct Message {
 }
 
 impl Client {
+    pub async fn dbsize(&mut self) -> crate::Result<u64> {
+        let frame = DbSize::new().into_frame();
+
+        debug!(request = ?frame);
+
+        self.connection.write_frame(&frame).await?;
+
+        match self.read_response().await? {
+            Frame::Integer(value) => Ok(value),
+            frame => Err(frame.to_error()),
+        }
+    }
+
     /// Establish a connection with the Redis server located at `addr`.
     ///
     /// `addr` may be any type that can be asynchronously converted to a

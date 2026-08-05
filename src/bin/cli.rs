@@ -26,6 +26,8 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Command {
+    #[command(name = "dbsize")]
+    DbSize {},
     Ping {
         /// Message to ping
         msg: Option<Bytes>,
@@ -87,6 +89,10 @@ async fn main() -> mini_redis::Result<()> {
 
     // Process the requested command
     match cli.command {
+        Command::DbSize {} => {
+            let value = client.dbsize().await?;
+            println!("{value}");
+        }
         Command::Ping { msg } => {
             let value = client.ping(msg).await?;
             if let Ok(string) = str::from_utf8(&value) {

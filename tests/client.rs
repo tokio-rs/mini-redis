@@ -39,6 +39,22 @@ async fn key_value_get_set() {
     assert_eq!(b"world", &value[..])
 }
 
+/// `DBSIZE` reports the number of distinct keys through the high-level client.
+#[tokio::test]
+async fn dbsize_counts_keys() {
+    let (addr, _) = start_server().await;
+    let mut client = Client::connect(addr).await.unwrap();
+
+    assert_eq!(0, client.dbsize().await.unwrap());
+
+    client.set("key1", "value1".into()).await.unwrap();
+    client.set("key2", "value2".into()).await.unwrap();
+    assert_eq!(2, client.dbsize().await.unwrap());
+
+    client.set("key1", "updated".into()).await.unwrap();
+    assert_eq!(2, client.dbsize().await.unwrap());
+}
+
 /// similar to the "hello world" style test, But this time
 /// a single channel subscription will be tested instead
 #[tokio::test]
