@@ -268,6 +268,11 @@ impl Db {
             .unwrap_or(0)
     }
 
+    pub(crate) fn size(&self) -> usize {
+        let state = self.shared.state.lock().unwrap();
+        state.entries.len().clone()
+    }
+
     /// Signals the purge background task to shut down. This is called by the
     /// `DbShutdown`s `Drop` implementation.
     fn shutdown_purge_task(&self) {
