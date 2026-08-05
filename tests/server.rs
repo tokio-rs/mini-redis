@@ -56,6 +56,57 @@ async fn key_value_get_set() {
     assert_eq!(0, stream.read(&mut response).await.unwrap());
 }
 
+/// `DBSIZE` returns the number of keys in the database. Overwriting an existing
+/// key must not increase the count.
+#[tokio::test]
+async fn dbsize_counts_keys() {
+    let addr = start_server().await;
+    let mut stream = TcpStream::connect(addr).await.unwrap();
+
+    // A newly-created database is empty.
+    stream.write_all(b"*1\r\n$6\r\nDBSIZE\r\n").await.unwrap();
+
+    let mut response = [0; 4];
+    stream.read_exact(&mut response).await.unwrap();
+    assert_eq!(b":0\r\n", &response);
+
+    // Insert two different keys.
+    stream
+        .write_all(b"*3\r\n$3\r\nSET\r\n$4\r\nkey1\r\n$6\r\nvalue1\r\n")
+        .await
+        .unwrap();
+    let mut response = [0; 5];
+    stream.read_exact(&mut response).await.unwrap();
+    assert_eq!(b"+OK\r\n", &response);
+
+    stream
+        .write_all(b"*3\r\n$3\r\nSET\r\n$4\r\nkey2\r\n$6\r\nvalue2\r\n")
+        .await
+        .unwrap();
+    let mut response = [0; 5];
+    stream.read_exact(&mut response).await.unwrap();
+    assert_eq!(b"+OK\r\n", &response);
+
+    stream.write_all(b"*1\r\n$6\r\nDBSIZE\r\n").await.unwrap();
+    let mut response = [0; 4];
+    stream.read_exact(&mut response).await.unwrap();
+    assert_eq!(b":2\r\n", &response);
+
+    // Replacing key1 changes its value, but not the number of keys.
+    stream
+        .write_all(b"*3\r\n$3\r\nSET\r\n$4\r\nkey1\r\n$7\r\nupdated\r\n")
+        .await
+        .unwrap();
+    let mut response = [0; 5];
+    stream.read_exact(&mut response).await.unwrap();
+    assert_eq!(b"+OK\r\n", &response);
+
+    stream.write_all(b"*1\r\n$6\r\nDBSIZE\r\n").await.unwrap();
+    let mut response = [0; 4];
+    stream.read_exact(&mut response).await.unwrap();
+    assert_eq!(b":2\r\n", &response);
+}
+
 /// Similar to the basic key-value test, however, this time timeouts will be
 /// tested. This test demonstrates how to test time related behavior.
 ///
