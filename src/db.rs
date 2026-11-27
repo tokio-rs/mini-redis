@@ -35,6 +35,52 @@ pub(crate) struct Db {
     shared: Arc<Shared>,
 }
 
+/// A live subscription to a pub/sub channel.
+///
+/// Wraps the broadcast `Receiver` for the channel. When the subscription is
+/// dropped, the channel is removed from the pub/sub key-space if no other
+/// subscriber is left, so channels that nobody listens to do not accumulate in
+/// the `Db` for the lifetime of the server.
+#[derive(Debug)]
+pub(crate) struct Subscription {
+    /// Always `Some` until the subscription is dropped. It is an `Option` so
+    /// `Drop` can release the receiver while holding the `Db` mutex.
+    rx: Option<broadcast::Receiver<Bytes>>,
+
+    /// The channel this subscription belongs to.
+    key: String,
+
+    shared: Arc<Shared>,
+}
+
+impl Subscription {
+    /// Receive the next message published on the channel.
+    pub(crate) async fn recv(&mut self) -> Result<Bytes, broadcast::error::RecvError> {
+        self.rx
+            .as_mut()
+            .expect("receiver is only taken in drop")
+            .recv()
+            .await
+    }
+}
+
+impl Drop for Subscription {
+    fn drop(&mut self) {
+        // The mutex is held while the receiver is released and the receiver
+        // count is checked. `Db::subscribe` takes the same mutex, so a
+        // concurrent subscriber either gets in first, and keeps the channel
+        // alive, or finds the channel already gone and creates a new one.
+        let mut state = self.shared.state.lock().unwrap();
+        drop(self.rx.take());
+
+        if let Some(tx) = state.pub_sub.get(&self.key) {
+            if tx.receiver_count() == 0 {
+                state.pub_sub.remove(&self.key);
+            }
+        }
+    }
+}
+
 #[derive(Debug)]
 struct Shared {
     /// The shared state is guarded by a mutex. This is a `std::sync::Mutex` and
@@ -220,9 +266,10 @@ impl Db {
 
     /// Returns a `Receiver` for the requested channel.
     ///
-    /// The returned `Receiver` is used to receive values broadcast by `PUBLISH`
-    /// commands.
-    pub(crate) fn subscribe(&self, key: String) -> broadcast::Receiver<Bytes> {
+    /// The returned `Subscription` is used to receive values broadcast by
+    /// `PUBLISH` commands. Dropping it releases the subscription and removes
+    /// the channel once it has no subscribers left.
+    pub(crate) fn subscribe(&self, key: String) -> Subscription {
         use std::collections::hash_map::Entry;
 
         // Acquire the mutex
@@ -231,7 +278,7 @@ impl Db {
         // If there is no entry for the requested channel, then create a new
         // broadcast channel and associate it with the key. If one already
         // exists, return an associated receiver.
-        match state.pub_sub.entry(key) {
+        let rx = match state.pub_sub.entry(key.clone()) {
             Entry::Occupied(e) => e.get().subscribe(),
             Entry::Vacant(e) => {
                 // No broadcast channel exists yet, so create one.
@@ -248,6 +295,12 @@ impl Db {
                 e.insert(tx);
                 rx
             }
+        };
+
+        Subscription {
+            rx: Some(rx),
+            key,
+            shared: self.shared.clone(),
         }
     }
 
@@ -366,4 +419,83 @@ async fn purge_expired_tasks(shared: Arc<Shared>) {
     }
 
     debug!("Purge background task shut down")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Number of channels currently present in the pub/sub key-space.
+    fn channel_count(db: &Db) -> usize {
+        db.shared.state.lock().unwrap().pub_sub.len()
+    }
+
+    #[tokio::test]
+    async fn dropping_last_subscription_removes_channel() {
+        let guard = DbDropGuard::new();
+        let db = guard.db();
+
+        let sub = db.subscribe("news".to_string());
+        assert_eq!(channel_count(&db), 1);
+
+        drop(sub);
+        assert_eq!(channel_count(&db), 0);
+        assert_eq!(db.publish("news", Bytes::from_static(b"hi")), 0);
+    }
+
+    #[tokio::test]
+    async fn channel_stays_while_a_subscriber_remains() {
+        let guard = DbDropGuard::new();
+        let db = guard.db();
+
+        let first = db.subscribe("news".to_string());
+        let mut second = db.subscribe("news".to_string());
+
+        drop(first);
+        assert_eq!(channel_count(&db), 1);
+        assert_eq!(db.publish("news", Bytes::from_static(b"hi")), 1);
+        assert_eq!(second.recv().await.unwrap(), Bytes::from_static(b"hi"));
+
+        drop(second);
+        assert_eq!(channel_count(&db), 0);
+    }
+
+    #[tokio::test]
+    async fn resubscribing_after_removal_creates_a_working_channel() {
+        let guard = DbDropGuard::new();
+        let db = guard.db();
+
+        drop(db.subscribe("news".to_string()));
+        assert_eq!(channel_count(&db), 0);
+
+        let mut sub = db.subscribe("news".to_string());
+        assert_eq!(db.publish("news", Bytes::from_static(b"again")), 1);
+        assert_eq!(sub.recv().await.unwrap(), Bytes::from_static(b"again"));
+    }
+
+    #[tokio::test]
+    async fn many_short_lived_channels_leave_nothing_behind() {
+        let guard = DbDropGuard::new();
+        let db = guard.db();
+
+        for i in 0..100 {
+            let sub = db.subscribe(format!("channel-{i}"));
+            db.publish(&format!("channel-{i}"), Bytes::from_static(b"x"));
+            drop(sub);
+        }
+
+        assert_eq!(channel_count(&db), 0);
+    }
+
+    #[tokio::test]
+    async fn other_channels_are_not_affected() {
+        let guard = DbDropGuard::new();
+        let db = guard.db();
+
+        let _kept = db.subscribe("kept".to_string());
+        drop(db.subscribe("gone".to_string()));
+
+        assert_eq!(channel_count(&db), 1);
+        assert_eq!(db.publish("kept", Bytes::from_static(b"x")), 1);
+    }
 }
