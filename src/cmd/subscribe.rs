@@ -173,12 +173,12 @@ async fn subscribe_to_channel(
     db: &Db,
     dst: &mut Connection,
 ) -> crate::Result<()> {
-    let mut rx = db.subscribe(channel_name.clone());
+    let mut sub = db.subscribe(channel_name.clone());
 
     // Subscribe to the channel.
     let rx = Box::pin(async_stream::stream! {
         loop {
-            match rx.recv().await {
+            match sub.recv().await {
                 Ok(msg) => yield msg,
                 // If we lagged in consuming messages, just resume.
                 Err(broadcast::error::RecvError::Lagged(_)) => {}
